@@ -28,14 +28,43 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
 - Solutions should be complete, runnable Python scripts that showcase best practices.
 - Always look at latest documentation on Microsoft Agent Framework using microsoftdocs/mcp/* and upstash/context7/* tools before creating the solutions, to ensure the content is up-to-date.
 
+# Testing and Running Lessons
+- **Every lesson MUST include Docker and Docker Compose configuration** to enable developers to test the solution quickly without complex setup.
+- Each lesson folder should contain:
+  - `Dockerfile` - Container configuration with all dependencies
+  - `docker-compose.yml` - Service orchestration for running the lesson (must reference root .env file)
+  - `README.md` - Clear instructions on how to run the lesson using Docker
+- The Docker setup should:
+  - Include all required dependencies (MAF, Python packages, etc.)
+  - Expose appropriate ports for testing (e.g., 8000 for web services)
+  - Mount source code as volumes for easy experimentation
+  - Use the `.env` file at the repository root for all environment variables (no per-lesson .env files)
+  - Provide clear output showing the expected behavior
+  - Include simple test commands developers can run to validate the solution
+- Make it trivial for developers to run: `docker-compose up` should be sufficient to see the agent in action
+- The root `.env.example` should document all environment variables needed across all lessons
+
 # Folder Structure
 - Create a root folder named `lessons`, that will contain all lesson materials with pre-built solutions.
+- A single `.env.example` at the repository root contains all environment variables for all lessons
+- Each lesson folder should follow this structure:
+  ```
+  lessons/lesson-XX-name/
+  ├── README.md              # Lesson documentation and Docker instructions
+  ├── Dockerfile             # Container configuration
+  ├── docker-compose.yml     # Service orchestration (references root .env)
+  ├── requirements.txt       # Python dependencies
+  ├── src/                   # Source code
+  │   └── main.py           # Main application entry point
+  └── tests/                 # Optional test scripts
+  ```
 - To make the evolution of the training being more realistic, the lessons should reuse code from previous lessons, so that the developer can see how foundational concepts are then used for more complex scenarios.
 
 # Training Flow
 - The developer should be able to progress through the training at their own pace.
 - Each lesson should include a detailed explanation of the concepts and a complete working solution.
-- Developers can study the pre-built solutions, run them, and modify them to experiment with different approaches.
+- Developers can study the pre-built solutions, run them with Docker, and modify them to experiment with different approaches.
+- The Docker setup ensures consistency across different development environments and removes setup friction.
 
 # Final Goal
 - The final goal is to have the developer learn from a series of progressively complex pre-built solutions that build their understanding of AI-powered applications, culminating in the ability to design and implement complex multi-agent systems.

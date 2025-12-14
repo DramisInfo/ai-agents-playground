@@ -266,37 +266,22 @@ ai-agents-playground/
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.10 or later
-- GitHub account (for free Copilot Models access)
-- Basic Python and terminal knowledge
+**New to this training?** Follow the [Quick Setup Guide](docs/setup-guide.md) to get your environment ready in 5 minutes!
 
-### Quick Setup
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd ai-agents-playground
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure your environment
-cp .env.example .env
-# Edit .env with your GitHub token
-```
+The setup includes:
+- Docker and Docker Compose for running lessons
+- Shared infrastructure (database, vector store, Redis)
+- GitHub Copilot Models configuration
+- One-time `.env` configuration for all lessons
 
 ### Start Learning
 
-1. Begin with **Lesson 1: The Support Bot**
-2. Study the pre-built solution and documentation
-3. Run the agent and experiment with modifications
-4. Understand the business impact and technical implementation
-5. Move to the next lesson when ready
+1. Complete the [Quick Setup Guide](docs/setup-guide.md) first
+2. Begin with **Lesson 1: The Support Bot**
+3. Study the pre-built solution and documentation
+4. Run the lesson with `docker-compose up`
+5. Understand the business impact and technical implementation
+6. Experiment with modifications and move to the next lesson
 
 ---
 

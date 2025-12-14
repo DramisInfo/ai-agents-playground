@@ -25,7 +25,7 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
 # Training Materials
 - Each lessons should be interractive and hands-on, allowing the developer to practice what they learn.
 - Include code samples, exercises, and real-world examples where applicable.
-- Use python notebooks for code-related lessons to allow for easy experimentation.
+- Use Jupyter notebooks for code-related lessons to allow for easy experimentation.
 - The notebooks should be well-documented and provide automated tests to validate the developer's work.
 - Always look at latest documentation on Microsoft Agent Framework using microsoftdocs/mcp/* and upstash/context7/* tools before creating the python notebooks, to ensure the content is up-to-date.
 

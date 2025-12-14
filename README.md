@@ -2,6 +2,10 @@
 
 A comprehensive, hands-on training program for learning to build AI-powered applications using the **Microsoft Agent Framework (MAF)** with Python.
 
+## ⚡ Quick Start
+
+**Ready to start immediately?** See the [Quick Start Guide](QUICK_START.md) to set up and begin learning in 5 minutes!
+
 ## 🎯 Training Objectives
 
 By completing this training, you will:
@@ -16,11 +20,12 @@ By completing this training, you will:
 ### **Module 1: Foundations of AI Agents**
 Build your understanding of AI agents and create your first working agent.
 
-#### Lesson 1.1: Introduction to AI Agents & Your First Agent
+#### Lesson 1.1: Introduction to AI Agents & Your First Agent ✅ **Available Now**
 - **Concepts**: What are AI agents? Agents vs. simple LLM calls
 - **Practice**: Set up environment, create a basic ChatAgent
 - **Exercise**: Build a custom agent with specific personality/instructions
 - **Validation**: Automated tests verify agent creation and response patterns
+- **📓 [Start Lesson 1.1](training-materials/module-1-foundations/lesson-1.1-first-agent.ipynb)**
 
 #### Lesson 1.2: Agent Instructions and Prompting
 - **Concepts**: Crafting effective instructions, system vs. user messages

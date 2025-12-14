@@ -114,24 +114,34 @@ qdrant              Up                  6333->6333, 6334->6334
 
 ---
 
-### Step 4: Verify Setup
+### Step 4: Verify Services are Running
 
-Run the verification script to ensure everything is configured correctly:
+Check that all services are healthy:
 
 ```bash
-docker-compose -f docker-compose.verify.yml up
+docker compose -f docker-compose.infrastructure.yml ps
 ```
 
-This will:
-✅ Test database connectivity  
-✅ Verify Redis connection  
-✅ Check Qdrant vector store  
-✅ Validate GitHub token and Copilot Models access  
-✅ Confirm all environment variables are set  
+You should see all three services with `STATUS` showing "Up" and "healthy":
 
-If all checks pass, you'll see:
 ```
-✅ All systems operational! Ready to start learning.
+NAME                STATUS              PORTS
+techflow-postgres   Up (healthy)        5432->5432
+techflow-redis      Up (healthy)        6379->6379
+techflow-qdrant     Up (healthy)        6333-6334->6333-6334
+```
+
+**Optional**: Test individual services:
+
+```bash
+# Test PostgreSQL
+docker compose -f docker-compose.infrastructure.yml exec postgres pg_isready -U techflow_user
+
+# Test Redis
+docker compose -f docker-compose.infrastructure.yml exec redis redis-cli ping
+
+# Test Qdrant
+curl http://localhost:6333/
 ```
 
 ---
@@ -149,12 +159,34 @@ Your environment is now fully configured! Here's what you have:
 
 ---
 
+## 🎛️ Understanding Feature Flags
+
+This training uses feature flags to demonstrate AI impact. Each lesson has a flag in `.env`:
+
+```bash
+# Example: Support Bot (Lesson 1)
+ENABLE_AI_SUPPORT_BOT=false   # Manual mode - baseline performance
+ENABLE_AI_SUPPORT_BOT=true    # AI mode - enhanced performance
+```
+
+**Why This Matters**:
+- See the "before" state (manual/rule-based processing)
+- Toggle to "after" state (AI-powered automation)
+- Measure exact efficiency improvements
+- Understand business value of each agent
+
+📖 **[Full Feature Flag Documentation →](feature-flags.md)**
+
+---
+
 ## 📚 Next Steps
 
 1. **Start with Lesson 1**: Navigate to `lessons/lesson-01-support-bot/`
 2. **Read the lesson README**: Understand the business problem and solution
-3. **Run the lesson**: Execute `docker-compose up` in the lesson folder
-4. **Experiment**: Modify the code and see real-time results
+3. **Run with AI disabled**: See baseline performance (`ENABLE_AI_SUPPORT_BOT=false`)
+4. **Enable AI**: Toggle the flag and watch the transformation
+5. **Compare metrics**: See real-time efficiency improvements
+6. **Experiment**: Modify the code and understand the implementation
 
 ---
 

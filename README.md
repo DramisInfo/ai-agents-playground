@@ -273,14 +273,26 @@ The setup includes:
 - Shared infrastructure (database, vector store, Redis)
 - GitHub Copilot Models configuration
 - One-time `.env` configuration for all lessons
+- **Feature flags** to toggle AI capabilities and measure impact
+
+### 🎛️ Incremental AI Adoption
+
+This training uses **feature flags** to let you experience TechFlow's transformation incrementally:
+
+1. **Start with AI disabled** - See the baseline (manual processes, inefficiencies)
+2. **Enable one agent at a time** - Toggle flags in `.env` to activate AI
+3. **Measure the impact** - Watch real-time metrics show efficiency gains
+4. **Stack the benefits** - Enable multiple agents to see cumulative ROI
+
+📖 **[Learn about Feature Flags →](docs/feature-flags.md)**
 
 ### Start Learning
 
 1. Complete the [Quick Setup Guide](docs/setup-guide.md) first
 2. Begin with **Lesson 1: The Support Bot**
-3. Study the pre-built solution and documentation
-4. Run the lesson with `docker-compose up`
-5. Understand the business impact and technical implementation
+3. Run with AI disabled to see baseline performance
+4. Enable the feature flag and watch the transformation
+5. Study the code to understand the implementation
 6. Experiment with modifications and move to the next lesson
 
 ---
@@ -293,6 +305,7 @@ The setup includes:
 - **Multi-Agent Systems** - Coordinating specialized agents
 - **Production Deployment** - Security, monitoring, and scaling
 - **Business Impact** - Measuring and communicating ROI
+- **Feature-Driven Development** - Incremental rollout and A/B testing
 
 ---
 
@@ -303,7 +316,8 @@ Traditional AI tutorials teach concepts in isolation. This training is different
 ✅ **Business-First**: Every lesson solves a real problem with measurable impact  
 ✅ **Progressive Complexity**: Start simple, build to sophisticated multi-agent systems  
 ✅ **Production-Ready**: Solutions include error handling, testing, and deployment  
-✅ **Reusable Code**: Each lesson builds on previous work, showing real evolution  
+✅ **Reusable Code**: Each lesson builds on previous work, showing real evolu  
+✅ **Before/After Visibility**: Feature flags let you toggle AI on/off to see real impacttion  
 ✅ **Cost-Effective**: Use free GitHub Copilot Models for all experimentation  
 
 ---

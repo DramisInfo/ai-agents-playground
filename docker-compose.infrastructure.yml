@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Relational database for application data
+  postgres:
+    image: postgres:16-alpine
+    container_name: techflow-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-techflow}
+      POSTGRES_USER: ${POSTGRES_USER:-techflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techflow_pass_change_in_production}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./shared/db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-techflow_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - techflow-network
+
+  # Redis - In-memory cache and session store
+  redis:
+    image: redis:7-alpine
+    container_name: techflow-redis
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - techflow-network
+
+  # Qdrant - Vector database for RAG
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: techflow-qdrant
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # Web UI
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - techflow-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  techflow-network:
+    driver: bridge

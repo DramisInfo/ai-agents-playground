@@ -28,12 +28,43 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
 - Solutions should be complete, runnable Python scripts that showcase best practices.
 - Always look at latest documentation on Microsoft Agent Framework using microsoftdocs/mcp/* and upstash/context7/* tools before creating the solutions, to ensure the content is up-to-date.
 
+# Feature Flag Architecture
+- **Every lesson MUST implement feature flag support** to demonstrate AI impact through before/after comparison.
+- Each lesson has a corresponding feature flag in the root `.env` file (e.g., `ENABLE_AI_SUPPORT_BOT=true/false`).
+- When feature flag is **disabled** (`false`):
+  - System operates with manual/rule-based logic (baseline performance)
+  - Shows the "before AI" state with realistic inefficiencies
+  - Simulates manual work, simple keyword matching, or basic automation
+  - Metrics show slower response times, lower accuracy, higher error rates
+- When feature flag is **enabled** (`true`):
+  - AI agent takes over the task
+  - Demonstrates intelligent decision-making, context awareness, and efficiency
+  - Metrics show measurable improvements (speed, accuracy, cost reduction)
+- **Purpose**: Allows developers to toggle AI capabilities on/off to:
+  - Experience the transformation incrementally (enable one feature at a time)
+  - See real-time impact metrics (before vs after comparison)
+  - Understand ROI for each AI capability
+  - Demonstrate business value to stakeholders
+- **Implementation Pattern**:
+  ```python
+  if os.getenv('ENABLE_AI_SUPPORT_BOT') == 'true':
+      # AI-powered logic - smart, context-aware
+      response = ai_agent.process(request)
+  else:
+      # Manual/rule-based fallback - slower, simpler
+      response = manual_process(request)
+  ```
+- All lessons should collect and display metrics for both modes to highlight efficiency gains.
+
 # Testing and Running Lessons
 - **Every lesson MUST include Docker and Docker Compose configuration** to enable developers to test the solution quickly without complex setup.
 - Each lesson folder should contain:
   - `Dockerfile` - Container configuration with all dependencies
   - `docker-compose.yml` - Service orchestration for running the lesson (must reference root .env file)
   - `README.md` - Clear instructions on how to run the lesson using Docker
+    - README must explain the feature flag for that lesson
+    - Include instructions for running with AI disabled vs enabled
+    - Show expected metrics for both modes
 - The Docker setup should:
   - Include all required dependencies (MAF, Python packages, etc.)
   - Expose appropriate ports for testing (e.g., 8000 for web services)
@@ -51,11 +82,15 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
   ```
   lessons/lesson-XX-name/
   ├── README.md              # Lesson documentation and Docker instructions
+  │                          # Must explain feature flag and before/after comparison
   ├── Dockerfile             # Container configuration
   ├── docker-compose.yml     # Service orchestration (references root .env)
   ├── requirements.txt       # Python dependencies
   ├── src/                   # Source code
-  │   └── main.py           # Main application entry point
+  │   ├── main.py           # Main application entry point
+  │   ├── agent.py          # AI-powered implementation (when flag enabled)
+  │   ├── manual.py         # Manual/rule-based fallback (when flag disabled)
+  │   └── metrics.py        # Metrics collection for both modes
   └── tests/                 # Optional test scripts
   ```
 - To make the evolution of the training being more realistic, the lessons should reuse code from previous lessons, so that the developer can see how foundational concepts are then used for more complex scenarios.

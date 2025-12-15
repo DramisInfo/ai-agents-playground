@@ -26,7 +26,7 @@ jobs:
 
       - name: Build infrastructure services
         run: |
-          docker-compose -f docker-compose.infrastructure.yml build \
+          docker compose -f docker-compose.infrastructure.yml build \
             postgres redis portal
 
       - name: Verify images were created
@@ -80,7 +80,7 @@ jobs:
 
       - name: Start infrastructure services
         run: |
-          docker-compose -f docker-compose.infrastructure.yml up -d \
+          docker compose -f docker-compose.infrastructure.yml up -d \
             postgres redis portal
           
       - name: Wait for services to be healthy
@@ -108,19 +108,19 @@ jobs:
 
       - name: Display running containers
         if: always()
-        run: docker-compose -f docker-compose.infrastructure.yml ps
+        run: docker compose -f docker-compose.infrastructure.yml ps
 
       - name: Display container logs
         if: always()
         run: |
           echo "=== Portal Logs ==="
-          docker-compose -f docker-compose.infrastructure.yml logs portal
+          docker compose -f docker-compose.infrastructure.yml logs portal
           echo "=== PostgreSQL Logs ==="
-          docker-compose -f docker-compose.infrastructure.yml logs postgres
+          docker compose -f docker-compose.infrastructure.yml logs postgres
           echo "=== Redis Logs ==="
-          docker-compose -f docker-compose.infrastructure.yml logs redis
+          docker compose -f docker-compose.infrastructure.yml logs redis
 
       - name: Cleanup
         if: always()
         run: |
-          docker-compose -f docker-compose.infrastructure.yml down -v
+          docker compose -f docker-compose.infrastructure.yml down -v

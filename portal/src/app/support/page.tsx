@@ -196,7 +196,7 @@ export default function SupportPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search knowledge base manually..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-techflow-primary"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-techflow-primary text-gray-900"
                   />
                   <button
                     onClick={searchKnowledgeBase}

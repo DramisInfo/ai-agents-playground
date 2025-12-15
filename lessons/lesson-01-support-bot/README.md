@@ -1,40 +1,50 @@
 # Lesson 1: The Support Bot - First Line of Defense
 
-## 🎯 Business Problem
+## 🎯 Learning Objectives
+
+In this lesson, you'll learn:
+- How to implement a **real AI agent** using Microsoft Agent Framework
+- How to integrate **GitHub Models** (free GPT-4o-mini) for LLM capabilities
+- The **feature flag pattern** for AI vs. manual comparison
+- How to measure and demonstrate **ROI from AI automation**
+- The business impact of replacing rule-based systems with intelligent agents
+
+## 🎬 Business Problem
 
 TechFlow Solutions' support team receives **200+ daily tickets**, with 60% being repetitive questions about products, pricing, account management, and basic troubleshooting. Support agents spend significant time answering the same questions repeatedly, leading to:
 
 - **Slow response times** (5-8 seconds per ticket with manual lookup)
-- **Inconsistent answers** across different agents
+- **Inconsistent answers** across different agents  
 - **Agent burnout** from repetitive work
 - **High operational costs** (80+ hours/week on repetitive tickets)
 
 ## 💡 Solution
 
-Build an AI-powered support bot that:
-- Answers common questions instantly using intelligent conversation
-- Understands context and intent (not just keywords)
+Build an AI-powered support bot using Microsoft Agent Framework that:
+- Uses **real LLM** (GitHub Models - gpt-4o-mini) to understand questions
+- Answers common questions with context-aware responses
+- Integrates a knowledge base directly in agent instructions
 - Provides consistent, accurate information
 - Frees human agents to handle complex issues
 
 ## 📊 Expected Impact
 
-| Metric | Before (Manual) | After (AI) | Improvement |
-|--------|----------------|-----------|-------------|
-| Average Response Time | 5.5 seconds | 1.2 seconds | **78% faster** |
+| Metric | Before (Manual) | After (AI Agent) | Improvement |
+|--------|----------------|------------------|-------------|
+| Response Quality | Rule-based matching | LLM-powered understanding | **Natural language** |
 | Accuracy Rate | 65% | 92% | **+27 points** |
-| Tickets Requiring Escalation | 35% | 8% | **77% reduction** |
-| Support Time Saved | - | 15 hours/week | **50% workload reduction** |
+| Context Understanding | None | Full conversation context | **Intelligent** |
+| Complex Query Handling | Poor | Excellent | **Significantly better** |
 
 ## 🏗️ Architecture
 
-This lesson demonstrates the **feature flag architecture** - the cornerstone pattern you'll use throughout all lessons:
+This lesson demonstrates the **feature flag architecture** - the cornerstone pattern for all lessons:
 
 ```
-┌─────────────────────────────────────────┐
-│   Support Ticket Request                │
-│   "What are your pricing plans?"        │
-└──────────────┬──────────────────────────┘
+┌──────────────────────────────────────────┐
+│   Support Ticket Request                 │
+│   "What are your pricing plans?"         │
+└──────────────┬───────────────────────────┘
                │
                ▼
 ┌──────────────────────────────────────────┐
@@ -48,15 +58,14 @@ This lesson demonstrates the **feature flag architecture** - the cornerstone pat
    false            true
        │                │
        ▼                ▼
-┌──────────┐    ┌──────────┐
-│  Manual  │    │    AI    │
-│   Mode   │    │   Mode   │
-└──────────┘    └──────────┘
+┌──────────────┐  ┌─────────────────────┐
+│    Manual    │  │   AI Agent (MAF)    │
+│     Mode     │  │  + GitHub Models    │
+└──────────────┘  └─────────────────────┘
        │                │
        ▼                ▼
-  Rule-based      Context-aware
-  Keyword Match   Understanding
-  5.5s response   1.2s response
+  Rule-based      LLM-powered
+  Keyword match   Understanding
   65% accuracy    92% accuracy
 ```
 
@@ -65,18 +74,26 @@ This lesson demonstrates the **feature flag architecture** - the cornerstone pat
 When `ENABLE_AI_SUPPORT_BOT=false`:
 - Uses **simple keyword matching** against knowledge base
 - Simulates traditional rule-based support
-- Slower response times (3-8 seconds)
+- Slower processing
 - Lower accuracy (65%)
 - Cannot understand context or complex queries
 
 ### AI Mode (AI Enabled)
 
 When `ENABLE_AI_SUPPORT_BOT=true`:
-- Uses **intelligent conversation** with context understanding
-- Combines information from multiple sources
-- Faster response times (0.5-2 seconds)
+- Uses **Microsoft Agent Framework** with real ChatAgent
+- Powered by **GitHub Models** (gpt-4o-mini - free for experimentation)
+- Real LLM-powered natural language understanding
+- Knowledge base integrated in agent instructions
+- Handles complex, multi-turn conversations
 - Higher accuracy (92%)
-- Handles complex, multi-part questions
+
+## 🔑 Key Technologies
+
+- **Microsoft Agent Framework**: Official Python framework for building AI agents
+- **GitHub Models**: Free access to GPT-4o-mini via OpenAI-compatible API
+- **FastAPI**: Modern Python web framework for the REST API
+- **Docker**: Containerization for easy deployment and testing
 
 ## 📁 Project Structure
 
@@ -84,308 +101,330 @@ When `ENABLE_AI_SUPPORT_BOT=true`:
 lesson-01-support-bot/
 ├── README.md                    # This file
 ├── Dockerfile                   # Container configuration
-├── requirements.txt             # Python dependencies
+├── requirements.txt             # Python dependencies (agent-framework, openai)
 └── src/
-    ├── main.py                 # FastAPI application with feature flag logic
+    ├── main.py                 # FastAPI app with feature flag logic
     ├── knowledge_base.py       # TechFlow product/support information
-    ├── manual.py               # Manual processing (AI disabled)
-    ├── agent.py                # AI processing (AI enabled)
-    └── metrics.py              # Performance tracking and comparison
+    ├── manual.py               # Manual mode (keyword matching)
+    ├── agent.py                # AI mode (Microsoft Agent Framework)
+    └── metrics.py              # Performance tracking
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Docker and Docker Compose installed
-- `.env` file configured in repository root
+- **Docker and Docker Compose** installed
+- **GitHub Personal Access Token** (free - get at https://github.com/settings/tokens)
+  - No special permissions needed for GitHub Models access
 
-### 1. Configure Feature Flag
+### Step 1: Set Up Environment
 
-Edit the root `.env` file:
-
+1. Copy the example environment file:
 ```bash
-# For manual mode (baseline)
-ENABLE_AI_SUPPORT_BOT=false
-
-# For AI mode (enhanced)
-ENABLE_AI_SUPPORT_BOT=true
+cp .env.example .env
 ```
 
-### 2. Start the Service
-
-From the repository root:
-
+2. Edit `.env` and add your GitHub token:
 ```bash
-# Start just the support bot
-docker compose -f docker-compose.infrastructure.yml up support-bot --build
+# GitHub Models Configuration
+GITHUB_TOKEN=your_github_token_here
+GITHUB_MODEL_ID=gpt-4o-mini
 
-# Or start all infrastructure services
-docker compose -f docker-compose.infrastructure.yml up --build
+# Feature Flags
+ENABLE_AI_SUPPORT_BOT=false  # Start with manual mode
 ```
 
-The support bot API will be available at: **http://localhost:8001**
-
-### 3. Test the Bot
-
-#### Using the API directly:
+### Step 2: Start the Infrastructure
 
 ```bash
-# Submit a support ticket
+# Start the support bot service
+docker-compose -f docker-compose.infrastructure.yml up support-bot -d
+
+# View logs
+docker-compose -f docker-compose.infrastructure.yml logs -f support-bot
+```
+
+The API will be available at `http://localhost:8001`
+
+### Step 3: Test Manual Mode (AI Disabled)
+
+First, let's see how the manual rule-based system works:
+
+```bash
+# Ask a simple question - should work with keyword matching
 curl -X POST http://localhost:8001/ticket \
   -H "Content-Type: application/json" \
   -d '{"question": "What are your pricing plans?"}'
 
-# Get performance metrics
-curl http://localhost:8001/metrics
-
-# Get example questions
-curl http://localhost:8001/examples
+# Ask a complex question - manual mode will struggle
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Can you compare the pricing between Basic and Premium plans and tell me which is better for a team of 5?"}'
 ```
 
-#### Using the Interactive Portal:
+**Expected behavior (Manual Mode)**:
+- Simple keyword matches work OK
+- Complex questions get generic/poor responses
+- No context understanding
+- Cannot combine information
 
-1. Open http://localhost:3000/support
-2. Toggle the AI feature flag
-3. Ask questions and see real-time metrics
+### Step 4: Enable AI Agent
 
-### 4. Compare Modes
+1. Update your `.env` file:
+```bash
+ENABLE_AI_SUPPORT_BOT=true  # Enable AI agent
+```
 
-**Test with AI Disabled:**
-1. Set `ENABLE_AI_SUPPORT_BOT=false`
-2. Restart the service
-3. Submit several tickets
-4. Note the response times and accuracy
+2. Restart the service:
+```bash
+docker-compose -f docker-compose.infrastructure.yml restart support-bot
+```
 
-**Test with AI Enabled:**
-1. Set `ENABLE_AI_SUPPORT_BOT=true`
-2. Restart the service
-3. Submit the same tickets
-4. Compare the improvements!
+3. Test the same questions again:
+```bash
+# Simple question - now uses LLM
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are your pricing plans?"}'
 
-## 📚 What You'll Learn
+# Complex question - AI agent handles this well!
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Can you compare the pricing between Basic and Premium plans and tell me which is better for a team of 5?"}'
+```
 
-### 1. Feature Flag Pattern
-- How to implement before/after comparison in your code
-- Using environment variables to control behavior
-- Measuring impact of AI features
+**Expected behavior (AI Mode)**:
+- Real LLM-powered understanding
+- Contextual, helpful responses
+- Can compare and synthesize information
+- Natural conversation style
 
-### 2. API Design
-- Building REST APIs with FastAPI
-- Handling requests and responses
-- Error handling and validation
+### Step 5: Compare Performance
 
-### 3. Metrics Collection
-- Tracking performance metrics (response time, accuracy)
-- Comparing manual vs AI processing
-- Calculating ROI and business impact
+```bash
+# Get metrics showing AI vs Manual performance
+curl http://localhost:8001/metrics
+```
 
-### 4. Knowledge Base Integration
-- Structuring domain knowledge
-- Keyword matching vs context understanding
-- Providing consistent answers
+## 📖 How It Works
+
+### The Agent Implementation (AI Mode)
+
+In [src/agent.py](src/agent.py), we implement a real AI agent:
+
+```python
+from agent_framework import ChatAgent
+from agent_framework.openai import OpenAIChatClient
+
+async def get_agent() -> ChatAgent:
+    """Create the AI agent using Microsoft Agent Framework."""
+    
+    # Create chat client for GitHub Models (OpenAI-compatible)
+    chat_client = OpenAIChatClient(
+        model_id="gpt-4o-mini",
+        api_key=os.getenv("GITHUB_TOKEN"),
+        base_url="https://models.inference.ai.azure.com"
+    )
+    
+    # Create agent with knowledge base in instructions
+    agent = ChatAgent(
+        chat_client=chat_client,
+        instructions=f"""You are a helpful TechFlow support agent.
+        
+Your role is to answer customer questions about TechFlow products.
+{knowledge_base_context}
+
+Be friendly, professional, and concise.""",
+        name="TechFlowSupportBot"
+    )
+    
+    return agent
+
+# Process ticket with real agent
+async def run_agent(question: str) -> str:
+    agent = await get_agent()
+    result = await agent.run(question)
+    return result.text
+```
+
+### The Manual Implementation (Baseline)
+
+In [src/manual.py](src/manual.py), we simulate traditional rule-based support:
+
+```python
+def process_ticket_manual(ticket_id: str, question: str) -> dict:
+    """Process ticket with simple keyword matching."""
+    
+    # Simple keyword search
+    for topic, data in KNOWLEDGE_BASE.items():
+        if any(keyword in question.lower() for keyword in data["keywords"]):
+            return data["answer"]
+    
+    return "I don't understand your question. Please contact support."
+```
 
 ## 🧪 Testing Scenarios
 
-Try these questions to see the difference:
+Try these questions to see the difference between Manual and AI modes:
 
-### Simple Questions (Both modes handle well)
-- "What are your pricing plans?"
-- "How do I reset my password?"
-- "What are your support hours?"
+### Simple Questions (Both work, but AI is better)
 
-### Complex Questions (AI excels)
-- "I need pricing info and want to know if you offer a trial"
-- "How does your DevOps tool integrate with our existing Slack and GitHub setup?"
-- "We're a team of 15, which plan is best and can we upgrade later?"
+```bash
+# Pricing question
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What plans do you offer?"}'
 
-### Edge Cases (Shows AI advantage)
-- Questions with typos or informal language
-- Multi-part questions
-- Questions requiring synthesis of multiple topics
-
-## 📈 Expected Results
-
-After processing 10 tickets with each mode:
-
-### Manual Mode Metrics:
-```
-Average Response Time: 5.5 seconds
-Accuracy Rate: 65%
-Escalation Rate: 35%
-Processing: Simple keyword matching
+# Feature question
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Do you have an API?"}'
 ```
 
-### AI Mode Metrics:
-```
-Average Response Time: 1.2 seconds
-Accuracy Rate: 92%
-Escalation Rate: 8%
-Processing: Context-aware understanding
-```
+### Complex Questions (AI shines here)
 
-### Business Impact:
-```
-Daily Time Saved: 10 hours (based on 200 tickets/day)
-Weekly Time Saved: 50 hours
-Monthly Cost Savings: $10,000 (at $50/hour)
-Workload Reduction: 50%
-```
+```bash
+# Multi-part question
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "I have a team of 10 developers. Which plan should I choose and how much will it cost?"}'
 
-## 🔧 API Endpoints
+# Comparison question
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is the difference between your Basic and Professional plans?"}'
 
-### `POST /ticket`
-Submit a support ticket for processing.
-
-**Request:**
-```json
-{
-  "question": "What are your pricing plans?",
-  "user_email": "customer@example.com"
-}
+# Context-based question
+curl -X POST http://localhost:8001/ticket \
+  -H "Content-Type: application/json" \
+  -d '{"question": "We are a startup with limited budget but need SSO. What are our options?"}'
 ```
 
-**Response:**
-```json
-{
-  "ticket_id": "TICKET-A1B2C3D4",
-  "question": "What are your pricing plans?",
-  "answer": "TechFlow Solutions offers flexible pricing plans...",
-  "mode": "ai",
-  "metrics": {
-    "response_time_seconds": 1.2,
-    "accuracy_score": 0.92,
-    "context_understanding": true
-  }
-}
-```
+## 📊 Metrics & ROI
 
-### `GET /metrics`
-Get performance metrics and comparison.
+The `/metrics` endpoint provides detailed comparison:
 
-**Response:**
 ```json
 {
   "summary": {
-    "total_tickets": 20,
-    "by_mode": {"manual": 10, "ai": 10},
+    "total_tickets": 100,
+    "manual_processed": 50,
+    "ai_processed": 50,
     "improvement": {
-      "speed_improvement": {
-        "percentage": 78.2,
-        "time_saved_per_ticket": 4.3
-      },
-      "business_impact": {
-        "weekly_time_saved_hours": 50,
-        "monthly_savings": "$10,000"
-      }
+      "accuracy": "+42%",
+      "context_understanding": "Significantly better"
     }
   }
 }
 ```
 
-### `GET /stats`
-Get statistics about the current mode.
+## 🎓 Key Learnings
 
-### `GET /examples`
-Get example questions for testing.
+### 1. Real Agent Framework
 
-### `GET /health`
-Health check endpoint.
+This lesson uses **actual Microsoft Agent Framework**, not a simulation:
+- `ChatAgent` class for agent creation
+- `OpenAIChatClient` for LLM integration
+- Real async/await patterns
+- Proper error handling
 
-## 🎓 Key Concepts
+### 2. GitHub Models Integration
 
-### 1. Feature Flags for AI Impact Demonstration
+GitHub Models provides **free access** to GPT-4o-mini:
+- OpenAI-compatible API
+- No credit card required
+- Perfect for learning and experimentation
+- Production-ready when you're ready to scale
 
-The feature flag pattern allows you to:
-- **Compare before and after** in the same codebase
-- **Demonstrate ROI** with real metrics
-- **Roll out gradually** by enabling for specific users
-- **Roll back instantly** if issues occur
+### 3. Feature Flag Pattern
 
-```python
-if os.getenv('ENABLE_AI_SUPPORT_BOT') == 'true':
-    # AI-powered logic - fast, accurate, context-aware
-    result = process_ticket_ai(ticket_id, question)
-else:
-    # Manual fallback - slower, simpler, keyword-based
-    result = process_ticket_manual(ticket_id, question)
-```
+The feature flag architecture allows you to:
+- **Toggle AI on/off** to demonstrate value
+- **Measure impact** with real metrics
+- **Roll out incrementally** (one capability at a time)
+- **Show ROI** to stakeholders
 
-### 2. Measuring AI Impact
+### 4. Knowledge Base Integration
 
-Always collect metrics for both modes:
-- **Response time**: How fast can we answer?
-- **Accuracy**: How often is the answer correct?
-- **Escalation rate**: How often do we need human help?
-- **User satisfaction**: How happy are customers?
+Two approaches demonstrated:
+- **Manual mode**: Separate keyword lookup
+- **AI mode**: Knowledge embedded in agent instructions
 
-### 3. Knowledge Base Design
+In later lessons, you'll learn:
+- RAG (Retrieval Augmented Generation)
+- Vector databases
+- Dynamic knowledge retrieval
 
-Structure your knowledge base for both modes:
-- **Keywords**: For simple matching (manual mode)
-- **Full content**: For context understanding (AI mode)
-- **Related topics**: For comprehensive answers
-- **Escalation paths**: When to hand off to humans
+## 🚀 Next Steps
 
-## 🔜 Next Steps
+### Immediate Next Steps
 
-Once you've completed this lesson:
+1. **Experiment with different models**:
+   - Try `gpt-4o` instead of `gpt-4o-mini`
+   - Compare response quality vs. speed
 
-1. **Experiment** with different questions
-2. **Analyze** the metrics to understand AI impact
-3. **Modify** the knowledge base with your own content
-4. **Proceed** to Lesson 2: The FAQ Expert (adding RAG)
+2. **Modify the knowledge base**:
+   - Add your own company information
+   - See how the agent adapts
 
-## 💡 Tips for Production
+3. **Test edge cases**:
+   - Questions outside the knowledge base
+   - Multi-turn conversations (coming in later lessons)
 
-While this lesson uses simulated AI responses, in production you would:
+### Advanced Exploration
 
-1. **Use Microsoft Agent Framework** with real AI models:
-   ```python
-   from agent_framework import ChatAgent
-   from agent_framework.openai import OpenAIChatClient
-   
-   agent = ChatAgent(
-       chat_client=OpenAIChatClient(model_id="gpt-4o"),
-       instructions="You are a helpful support agent...",
-       tools=[search_knowledge_base]
-   )
-   ```
+1. **Add conversation memory** (multi-turn support)
+2. **Implement tool calling** (agent can search external systems)
+3. **Add response streaming** (show answers as they're generated)
 
-2. **Integrate with your ticketing system** (Jira, ServiceNow, Zendesk)
+## 🔗 Related Lessons
 
-3. **Add authentication and rate limiting**
+- **Lesson 2**: RAG for Dynamic Knowledge (vector databases)
+- **Lesson 3**: Multi-Agent Routing (agent collaboration)
+- **Lesson 4**: Tool Integration (agents that take actions)
 
-4. **Implement proper error handling and fallbacks**
+## 📚 Additional Resources
 
-5. **Monitor and log all interactions** for quality assurance
-
-6. **Continuously update** the knowledge base based on new questions
+- [Microsoft Agent Framework Docs](https://learn.microsoft.com/agent-framework/)
+- [GitHub Models](https://github.com/marketplace/models)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
 
 ## 🐛 Troubleshooting
 
-### Service won't start
-- Check Docker is running: `docker ps`
-- Verify `.env` file exists in repository root
-- Check port 8001 is not in use: `lsof -i :8001`
+### "GITHUB_TOKEN environment variable is required"
 
-### Feature flag not working
-- Ensure `.env` value is exactly `true` or `false` (lowercase)
-- Restart the Docker container after changing `.env`
-- Check environment variables: `docker exec support-bot env | grep ENABLE`
+Make sure you:
+1. Created a GitHub Personal Access Token
+2. Added it to your `.env` file
+3. Restarted the Docker container
 
-### Slow response times
-- This is expected in manual mode (demonstrates the problem!)
-- AI mode should be much faster
-- Check Docker resource allocation if both modes are slow
+### "Error connecting to GitHub Models"
 
-## 📞 Support
+Check that:
+1. Your GitHub token is valid
+2. You have internet connectivity
+3. The `base_url` is correct in [src/agent.py](src/agent.py)
 
-Questions about this lesson? 
-- Check the [main README](../../README.md)
-- Review the [Setup Guide](../../docs/setup-guide.md)
-- Explore the [Feature Flags documentation](../../docs/feature-flags.md)
+### API returns 500 errors
+
+Check logs:
+```bash
+docker-compose -f docker-compose.infrastructure.yml logs support-bot
+```
+
+Common issues:
+- Missing environment variables
+- Invalid GitHub token
+- Network connectivity issues
+
+## 💬 Support
+
+Questions or issues? Check:
+- GitHub Issues in the repository
+- Microsoft Agent Framework documentation
+- GitHub Models documentation
 
 ---
 
-**Ready to see AI in action?** Toggle that feature flag and watch the magic happen! ✨
+**🎉 Congratulations!** You've built your first real AI agent using Microsoft Agent Framework and GitHub Models. This is the foundation for all the advanced multi-agent systems you'll build in later lessons.

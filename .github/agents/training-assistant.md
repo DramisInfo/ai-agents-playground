@@ -60,7 +60,7 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
 - **Every lesson MUST include Docker and Docker Compose configuration** to enable developers to test the solution quickly without complex setup.
 - Each lesson folder should contain:
   - `Dockerfile` - Container configuration with all dependencies
-  - `docker-compose.yml` - Service orchestration for running the lesson (must reference root .env file)
+  - root `docker-compose.infrastructure.yml` should be updated based on feature flag to include the new lesson service)
   - `README.md` - Clear instructions on how to run the lesson using Docker
     - README must explain the feature flag for that lesson
     - Include instructions for running with AI disabled vs enabled

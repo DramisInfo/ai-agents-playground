@@ -95,11 +95,40 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
   ```
 - To make the evolution of the training being more realistic, the lessons should reuse code from previous lessons, so that the developer can see how foundational concepts are then used for more complex scenarios.
 
+# Test Portal Integration
+- **Every new lesson MUST be registered in the test portal** to enable interactive testing and feature flag management.
+- The test portal (located in `portal/` directory) provides:
+  - Web-based interface to toggle feature flags in real-time
+  - Live metrics dashboard showing AI vs Manual performance
+  - Quick access to run any lesson
+  - Before/after comparison visualizations
+- When creating a new lesson, you MUST:
+  1. Register the lesson in the portal configuration file
+  2. Add the lesson's feature flag to the portal's toggle interface
+  3. Include metrics endpoints that the portal can query
+  4. Update the portal's navigation to include the new lesson
+  5. Test that toggling the flag in the portal correctly enables/disables AI
+- Portal structure requirements:
+  ```
+  portal/
+  ├── config/
+  │   └── lessons.json      # Register new lessons here
+  ├── src/
+  │   ├── components/
+  │   │   └── LessonCard.js # Shows lesson with toggle
+  │   └── api/
+  │       └── metrics.js    # Fetches lesson metrics
+  └── docker-compose.yml    # Portal service
+  ```
+- The portal should be accessible at `http://localhost:3000` when running
+- Each lesson's Docker service must expose metrics endpoint at `/metrics` for portal integration
+
 # Training Flow
 - The developer should be able to progress through the training at their own pace.
 - Each lesson should include a detailed explanation of the concepts and a complete working solution.
 - Developers can study the pre-built solutions, run them with Docker, and modify them to experiment with different approaches.
 - The Docker setup ensures consistency across different development environments and removes setup friction.
+- The test portal provides a visual interface to toggle AI features and see real-time impact.
 
 # Final Goal
 - The final goal is to have the developer learn from a series of progressively complex pre-built solutions that build their understanding of AI-powered applications, culminating in the ability to design and implement complex multi-agent systems.

@@ -1,0 +1,126 @@
+name: Docker Build Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-infrastructure:
+    name: Build Infrastructure Services
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create environment file
+        run: |
+          cp .env.example .env
+          # Set dummy GitHub token for build (not needed for build, only runtime)
+          sed -i 's/your_github_personal_access_token_here/dummy_token_for_ci_build/g' .env
+
+      - name: Build infrastructure services
+        run: |
+          docker-compose -f docker-compose.infrastructure.yml build \
+            postgres redis portal
+
+      - name: Verify images were created
+        run: |
+          docker images | grep techflow-portal
+          docker images | grep pgvector
+          docker images | grep redis
+
+  build-lessons:
+    name: Build Lesson Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lesson:
+          - name: lesson-01
+            path: lessons/lesson-01-support-bot
+            service: support-bot
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.lesson.name }}
+        run: |
+          docker build -t techflow-${{ matrix.lesson.service }}:test \
+            ${{ matrix.lesson.path }}
+
+      - name: Verify image was created
+        run: |
+          docker images | grep techflow-${{ matrix.lesson.service }}
+
+  integration-test:
+    name: Integration Test - Start All Services
+    runs-on: ubuntu-latest
+    needs: [build-infrastructure, build-lessons]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create environment file
+        run: |
+          cp .env.example .env
+          sed -i 's/your_github_personal_access_token_here/dummy_token_for_ci_build/g' .env
+
+      - name: Start infrastructure services
+        run: |
+          docker-compose -f docker-compose.infrastructure.yml up -d \
+            postgres redis portal
+          
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for PostgreSQL..."
+          timeout 60 bash -c 'until docker exec techflow-postgres pg_isready -U techflow_user; do sleep 2; done'
+          
+          echo "Waiting for Redis..."
+          timeout 60 bash -c 'until docker exec techflow-redis redis-cli ping; do sleep 2; done'
+          
+          echo "Waiting for Portal..."
+          sleep 10
+          timeout 60 bash -c 'until curl -f http://localhost:3000 > /dev/null 2>&1; do sleep 2; done'
+
+      - name: Run health checks
+        run: |
+          # Check PostgreSQL
+          docker exec techflow-postgres pg_isready -U techflow_user
+          
+          # Check Redis
+          docker exec techflow-redis redis-cli ping
+          
+          # Check Portal
+          curl -f http://localhost:3000 || exit 1
+
+      - name: Display running containers
+        if: always()
+        run: docker-compose -f docker-compose.infrastructure.yml ps
+
+      - name: Display container logs
+        if: always()
+        run: |
+          echo "=== Portal Logs ==="
+          docker-compose -f docker-compose.infrastructure.yml logs portal
+          echo "=== PostgreSQL Logs ==="
+          docker-compose -f docker-compose.infrastructure.yml logs postgres
+          echo "=== Redis Logs ==="
+          docker-compose -f docker-compose.infrastructure.yml logs redis
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f docker-compose.infrastructure.yml down -v

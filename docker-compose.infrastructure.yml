@@ -78,6 +78,24 @@ services:
     networks:
       - techflow-network
 
+  # Support Bot - Lesson 1: First Line of Defense
+  support-bot:
+    build:
+      context: ./lessons/lesson-01-support-bot
+      dockerfile: Dockerfile
+    container_name: techflow-support-bot
+    ports:
+      - "8001:8001"
+    environment:
+      ENABLE_AI_SUPPORT_BOT: ${ENABLE_AI_SUPPORT_BOT:-false}
+    restart: unless-stopped
+    networks:
+      - techflow-network
+    # Only start if lesson 1 is being used
+    profiles:
+      - lesson-01
+      - all-lessons
+
 volumes:
   postgres_data:
     driver: local

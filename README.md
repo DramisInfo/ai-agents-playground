@@ -239,6 +239,13 @@ By completing this training, you'll have built **12 production-ready AI agents**
 
 ```
 ai-agents-playground/
+├── portal/                      # TechFlow Operations Portal (Next.js)
+│   ├── src/
+│   │   ├── app/                # Next.js pages (support, sales, hr, etc.)
+│   │   ├── components/         # Shared UI components
+│   │   └── lib/               # Utilities and mock data
+│   ├── Dockerfile
+│   └── package.json
 ├── lessons/                     # Complete working solutions for each lesson
 │   ├── lesson-01-support-bot/
 │   ├── lesson-02-faq-expert/
@@ -256,17 +263,44 @@ ai-agents-playground/
 │   ├── utils/
 │   ├── tools/
 │   └── models/
-└── docs/                        # Additional documentation
-    ├── setup-guide.md
-    ├── troubleshooting.md
-    └── best-practices.md
+├── docs/                        # Additional documentation
+│   ├── setup-guide.md
+│   ├── troubleshooting.md
+│   └── best-practices.md
+└── docker-compose.infrastructure.yml  # All services including portal
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-**New to this training?** Follow the [Quick Setup Guide](docs/setup-guide.md) to get your environment ready in 5 minutes!
+### Step 1: Experience TechFlow's Operations Portal
+
+**Before diving into lessons, experience the problem firsthand!**
+
+The TechFlow Operations Portal lets you work as a TechFlow employee, experiencing the daily pain points that AI agents will solve.
+
+```bash
+# Start all services (database, cache, and portal)
+docker-compose -f docker-compose.infrastructure.yml up --build
+
+# Visit the portal
+open http://localhost:3000
+```
+
+**Try the Support Dashboard first:**
+1. Navigate to Support Dashboard
+2. Click on urgent tickets to see customer issues
+3. Try to manually search the knowledge base
+4. Compose responses from scratch (no templates!)
+5. Attempt to route tickets to the right team
+6. Feel the frustration of 200+ daily tickets
+
+This hands-on experience will make you **understand why** the AI solutions in each lesson are so valuable.
+
+### Step 2: Follow the Lessons
+
+**After experiencing the pain points**, follow the [Quick Setup Guide](docs/setup-guide.md) to start building AI solutions!
 
 The setup includes:
 - Docker and Docker Compose for running lessons
@@ -288,12 +322,13 @@ This training uses **feature flags** to let you experience TechFlow's transforma
 
 ### Start Learning
 
-1. Complete the [Quick Setup Guide](docs/setup-guide.md) first
-2. Begin with **Lesson 1: The Support Bot**
-3. Run with AI disabled to see baseline performance
-4. Enable the feature flag and watch the transformation
-5. Study the code to understand the implementation
-6. Experiment with modifications and move to the next lesson
+1. **Experience the pain** - Use the [TechFlow Operations Portal](portal/README.md) first
+2. Complete the [Quick Setup Guide](docs/setup-guide.md)
+3. Begin with **Lesson 1: The Support Bot**
+4. Integrate your AI agent with the portal
+5. Toggle the feature flag and watch the transformation
+6. Study the code to understand the implementation
+7. Measure the real impact and move to the next lesson
 
 ---
 

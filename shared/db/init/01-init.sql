@@ -4,21 +4,38 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
+CREATE EXTENSION IF NOT EXISTS "vector"; -- For embeddings and RAG (pgvector)
 
 -- Support Tickets (Lessons 1, 2, 3)
 CREATE TABLE IF NOT EXISTS support_tickets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    ticket_number VARCHAR(20) UNIQUE NOT NULL,
+    ticket_number INTEGER UNIQUE NOT NULL,
     subject VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'open',
+    customer_name VARCHAR(255) NOT NULL,
+    customer_email VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'new',
     priority VARCHAR(20) DEFAULT 'medium',
     category VARCHAR(100),
     assigned_team VARCHAR(100),
+    assigned_to VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     resolved_at TIMESTAMP
 );
+
+-- Seed support tickets with realistic data
+INSERT INTO support_tickets (ticket_number, subject, description, customer_name, customer_email, category, priority, status, created_at) VALUES
+(1247, 'How do I reset my password?', 'I forgot my password and the reset link is not working. Can you help?', 'John Smith', 'john.smith@example.com', 'Account', 'medium', 'new', NOW() - INTERVAL '15 minutes'),
+(1248, 'API returning 500 errors', 'Our production API integration is returning 500 errors since this morning. This is blocking our customers.', 'Sarah Johnson', 'sarah.j@techcorp.com', 'Technical', 'urgent', 'new', NOW() - INTERVAL '5 minutes'),
+(1249, 'How to integrate webhooks?', 'I want to set up webhooks for order notifications. Where can I find the documentation?', 'Mike Chen', 'mike.chen@startup.io', 'Technical', 'low', 'new', NOW() - INTERVAL '30 minutes'),
+(1250, 'Billing question about invoice #4521', 'I received invoice #4521 but the amount seems incorrect. Can you review?', 'Emily Davis', 'emily.d@company.com', 'Billing', 'medium', 'new', NOW() - INTERVAL '10 minutes'),
+(1251, 'How do I export my data?', 'I need to export all my data for compliance reasons. What format is available?', 'Robert Wilson', 'r.wilson@business.com', 'Account', 'low', 'new', NOW() - INTERVAL '45 minutes'),
+(1252, 'Connection timeout errors', 'Getting intermittent connection timeout errors when uploading large files (>100MB).', 'Lisa Anderson', 'lisa.a@enterprise.com', 'Technical', 'high', 'new', NOW() - INTERVAL '20 minutes'),
+(1253, 'What is your refund policy?', 'I purchased the annual plan but need to cancel. What is your refund policy?', 'David Brown', 'david.brown@email.com', 'Sales', 'low', 'new', NOW() - INTERVAL '35 minutes'),
+(1254, 'How to add team members?', 'I need to add 5 new team members to our account. How do I do this?', 'Jennifer Lee', 'jlee@company.org', 'Account', 'medium', 'new', NOW() - INTERVAL '8 minutes'),
+(1255, 'Feature request: Dark mode', 'Would love to see a dark mode option in the dashboard. Any plans for this?', 'Tom Harris', 'tharris@dev.com', 'Feature Request', 'low', 'new', NOW() - INTERVAL '50 minutes'),
+(1256, 'Cannot access dashboard - urgent!', 'Dashboard is showing a blank page after login. This is urgent as we have a client demo in 30 minutes!', 'Amanda White', 'awhite@critical.com', 'Technical', 'urgent', 'new', NOW() - INTERVAL '3 minutes');
 
 -- Customer Leads (Lesson 4)
 CREATE TABLE IF NOT EXISTS sales_leads (
@@ -127,13 +144,6 @@ CREATE INDEX idx_leads_status ON sales_leads(status);
 CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_metrics_agent ON agent_metrics(agent_name, timestamp DESC);
 CREATE INDEX idx_audit_agent ON agent_audit_log(agent_name, timestamp DESC);
-
--- Insert sample data for testing
-INSERT INTO support_tickets (ticket_number, subject, description, category, priority) VALUES
-    ('TICKET-001', 'How do I reset my password?', 'I forgot my password and need to reset it.', 'account', 'high'),
-    ('TICKET-002', 'API documentation request', 'Where can I find the API documentation?', 'documentation', 'medium'),
-    ('TICKET-003', 'Billing question', 'I have a question about my last invoice.', 'billing', 'medium')
-ON CONFLICT (ticket_number) DO NOTHING;
 
 -- Success message
 DO $$

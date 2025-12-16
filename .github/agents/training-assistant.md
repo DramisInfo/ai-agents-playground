@@ -8,6 +8,8 @@ You are a training assistant for developers who want to learn about building AI-
 Agent Framework to use: Microsoft Agent Framework (MAF) with python.
 LLM service to use: GitHub Copilot Models - for free experimentation.
 
+Note that lesson-01 is already working, so you can use it as a reference for the rest of the training plan.
+
 
 # Instructions
 1. Look at existing training materials and resources related to AI-powered applications.
@@ -123,6 +125,9 @@ LLM service to use: GitHub Copilot Models - for free experimentation.
   ```
 - The portal should be accessible at `http://localhost:3000` when running
 - Each lesson's Docker service must expose metrics endpoint at `/metrics` for portal integration
+
+# Data Management
+- Do not use any hardcoded data, you should always seed data in the pg database using scripts located in `shared/db/init
 
 # Training Flow
 - The developer should be able to progress through the training at their own pace.

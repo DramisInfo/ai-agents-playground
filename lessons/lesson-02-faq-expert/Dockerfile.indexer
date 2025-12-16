@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+# Install uv for faster package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies with uv (much faster!)
+RUN uv pip install --system -r requirements.txt
+
+# Copy source code
+COPY src/ ./src/
+COPY knowledge-base/ ./knowledge-base/
+
+# Run indexer
+CMD ["python", "-m", "src.indexer"]

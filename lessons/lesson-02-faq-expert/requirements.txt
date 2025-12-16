@@ -1,0 +1,14 @@
+# Document Processing
+docling==2.65.0
+docling-core
+
+# Vector Database & Embeddings
+psycopg2-binary
+pgvector
+openai
+
+# Microsoft Agent Framework
+agent-framework
+
+# Environment and utilities
+python-dotenv==1.0.1

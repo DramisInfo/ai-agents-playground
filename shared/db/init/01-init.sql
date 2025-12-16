@@ -137,6 +137,32 @@ CREATE TABLE IF NOT EXISTS agent_audit_log (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Knowledge Base Documents (Lesson 2)
+CREATE TABLE IF NOT EXISTS kb_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    filename VARCHAR(500) NOT NULL,
+    filepath VARCHAR(1000) NOT NULL UNIQUE,
+    title VARCHAR(500),
+    content_type VARCHAR(100),
+    file_size INTEGER,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    indexed_at TIMESTAMP
+);
+
+-- Knowledge Base Chunks with Embeddings (Lesson 2)
+CREATE TABLE IF NOT EXISTS kb_chunks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID NOT NULL REFERENCES kb_documents(id) ON DELETE CASCADE,
+    chunk_index INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    embedding vector(1536), -- OpenAI embeddings are 1536 dimensions
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(document_id, chunk_index)
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_tickets_status ON support_tickets(status);
 CREATE INDEX idx_tickets_created ON support_tickets(created_at DESC);
@@ -144,6 +170,12 @@ CREATE INDEX idx_leads_status ON sales_leads(status);
 CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_metrics_agent ON agent_metrics(agent_name, timestamp DESC);
 CREATE INDEX idx_audit_agent ON agent_audit_log(agent_name, timestamp DESC);
+
+-- Indexes for knowledge base
+CREATE INDEX idx_kb_documents_filepath ON kb_documents(filepath);
+CREATE INDEX idx_kb_chunks_document ON kb_chunks(document_id);
+-- Vector similarity search index (using HNSW algorithm)
+CREATE INDEX idx_kb_chunks_embedding ON kb_chunks USING hnsw (embedding vector_cosine_ops);
 
 -- Success message
 DO $$

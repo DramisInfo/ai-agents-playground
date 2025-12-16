@@ -77,10 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lesson:
-          - name: lesson-01
-            path: lessons/lesson-01-support-bot
-            service: support-bot
+        profile:
+          - lesson-01
+          - lesson-02
     
     steps:
       - name: Checkout repository
@@ -93,27 +92,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.lesson.name }}-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-${{ matrix.profile }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.lesson.name }}-
+            ${{ runner.os }}-buildx-${{ matrix.profile }}-
 
-      - name: Build ${{ matrix.lesson.name }}
+      - name: Create environment file
         run: |
-          docker buildx build \
-            --cache-from type=local,src=/tmp/.buildx-cache \
-            --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
-            --load \
-            -t ai-agents-playground-${{ matrix.lesson.service }}:test \
-            ${{ matrix.lesson.path }}
+          cp .env.example .env
+          sed -i 's/your_github_personal_access_token_here/dummy_token_for_ci_build/g' .env
+
+      - name: Build ${{ matrix.profile }} services
+        run: |
+          docker compose -f docker-compose.infrastructure.yml --profile ${{ matrix.profile }} build
       
-      - name: Move cache
+      - name: Verify images were created
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Verify image was created
-        run: |
-          docker images | grep ai-agents-playground-${{ matrix.lesson.service }}
+          docker compose -f docker-compose.infrastructure.yml --profile ${{ matrix.profile }} config --images
 
   integration-test:
     name: Integration Test - Start All Services

@@ -98,6 +98,30 @@ services:
       - lesson-01
       - all-lessons
 
+  # FAQ Indexer - Lesson 2: Index knowledge base documents
+  faq-indexer:
+    build:
+      context: ./lessons/lesson-02-faq-expert
+      dockerfile: Dockerfile.indexer
+    container_name: techflow-faq-indexer
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-techflow}
+      POSTGRES_USER: ${POSTGRES_USER:-techflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techflow_pass_change_in_production}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - techflow-network
+    # Only start if lesson 2 is being used
+    profiles:
+      - lesson-02
+      - all-lessons
+    restart: "no"  # Run once and exit
+
 volumes:
   postgres_data:
     driver: local

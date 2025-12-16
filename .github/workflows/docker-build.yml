@@ -39,8 +39,8 @@ jobs:
 
       - name: Verify images were created
         run: |
-          docker images | grep techflow-portal
-          docker images | grep pgvector
+          docker images | grep ai-agents-playground-portal
+          docker images | grep pgvector/pgvector
           docker images | grep redis
 
   build-lessons:
@@ -62,12 +62,12 @@ jobs:
 
       - name: Build ${{ matrix.lesson.name }}
         run: |
-          docker build -t techflow-${{ matrix.lesson.service }}:test \
+          docker build -t ai-agents-playground-${{ matrix.lesson.service }}:test \
             ${{ matrix.lesson.path }}
 
       - name: Verify image was created
         run: |
-          docker images | grep techflow-${{ matrix.lesson.service }}
+          docker images | grep ai-agents-playground-${{ matrix.lesson.service }}
 
   integration-test:
     name: Integration Test - Start All Services

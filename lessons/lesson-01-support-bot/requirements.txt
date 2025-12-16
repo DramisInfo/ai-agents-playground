@@ -5,4 +5,5 @@ python-dotenv==1.0.1
 
 # Microsoft Agent Framework (pre-release)
 # Note: This will install compatible versions of pydantic, openai, and other dependencies
-agent-framework==1.0.0b251211
+# Use the latest pre-release version instead of pinning to avoid dependency resolution issues
+agent-framework

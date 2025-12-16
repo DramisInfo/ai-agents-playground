@@ -88,6 +88,8 @@ services:
       - "8001:8001"
     environment:
       ENABLE_AI_SUPPORT_BOT: ${ENABLE_AI_SUPPORT_BOT:-false}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_MODEL: ${GITHUB_MODEL:-gpt-4o-mini}
     restart: unless-stopped
     networks:
       - techflow-network

@@ -40,22 +40,26 @@ jobs:
         working-directory: ./portal
         run: npm install --package-lock-only
 
+      - name: Pull base images
+        run: |
+          docker compose -f docker-compose.infrastructure.yml pull postgres redis
+
       - name: Build infrastructure services
         run: |
           DOCKER_BUILDKIT=1 docker compose -f docker-compose.infrastructure.yml build \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            postgres redis portal
+            portal
 
       - name: Verify images were created
         run: |
           echo "Checking for portal image..."
-          docker images ai-agents-playground-portal --format "{{.Repository}}:{{.Tag}}" | grep -q ai-agents-playground-portal || { echo "Portal image not found"; exit 1; }
+          docker images ai-agents-playground-portal:latest || { echo "Portal image not found"; exit 1; }
           
           echo "Checking for pgvector image..."
-          docker images pgvector/pgvector --format "{{.Repository}}:{{.Tag}}" | grep -q pgvector || { echo "Pgvector image not found"; exit 1; }
+          docker images pgvector/pgvector:pg16 || { echo "Pgvector image not found"; exit 1; }
           
           echo "Checking for redis image..."
-          docker images redis --format "{{.Repository}}:{{.Tag}}" | grep -q redis || { echo "Redis image not found"; exit 1; }
+          docker images redis:7-alpine || { echo "Redis image not found"; exit 1; }
           
           echo "All images verified successfully!"
 

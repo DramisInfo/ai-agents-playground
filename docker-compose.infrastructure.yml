@@ -12,7 +12,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Use tmpfs for development to avoid persisting data between runs
+      # Comment out the tmpfs line below and uncomment postgres_data for production
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+      # - postgres_data:/var/lib/postgresql/data
       - ./shared/db/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-techflow_user}"]
@@ -111,6 +115,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-techflow_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techflow_pass_change_in_production}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-github}
+      LMSTUDIO_URL: ${LMSTUDIO_URL:-http://host.docker.internal:1234/v1}
+      LMSTUDIO_MODEL: ${LMSTUDIO_MODEL:-text-embedding-nomic-embed-text-v2}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

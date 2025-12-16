@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS kb_chunks (
     document_id UUID NOT NULL REFERENCES kb_documents(id) ON DELETE CASCADE,
     chunk_index INTEGER NOT NULL,
     content TEXT NOT NULL,
-    embedding vector(1536), -- OpenAI embeddings are 1536 dimensions
+    embedding vector(768), -- Ollama nomic-embed-text embeddings are 768 dimensions
     metadata JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(document_id, chunk_index)

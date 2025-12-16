@@ -6,6 +6,7 @@ docling-core
 psycopg2-binary
 pgvector
 openai
+ollama
 
 # Microsoft Agent Framework
 agent-framework

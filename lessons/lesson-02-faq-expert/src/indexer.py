@@ -13,6 +13,7 @@ from pgvector.psycopg2 import register_vector
 from docling.document_converter import DocumentConverter
 from docling.chunking import HybridChunker
 from openai import OpenAI
+import ollama
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -29,10 +30,32 @@ class DocumentIndexer:
         # Set max_tokens to 512 to stay well within embedding model's 8191 token limit
         # This ensures chunks are a reasonable size for both embeddings and retrieval
         self.chunker = HybridChunker(max_tokens=512)
-        self.openai_client = OpenAI(
-            base_url="https://models.github.ai/inference",
-            api_key=os.getenv("GITHUB_TOKEN")
-        )
+        
+        # Configure embedding provider based on environment
+        self.embedding_provider = os.getenv("EMBEDDING_PROVIDER", "github").lower()
+        
+        if self.embedding_provider == "ollama":
+            self.ollama_host = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
+            self.ollama_model = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+            self.embedding_dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
+            print(f"🤖 Using Ollama embeddings: {self.ollama_model} ({self.embedding_dimensions}D) at {self.ollama_host}")
+        elif self.embedding_provider == "lmstudio":
+            # LM Studio provides OpenAI-compatible API
+            lmstudio_url = os.getenv("LMSTUDIO_URL", "http://host.docker.internal:1234/v1")
+            self.lmstudio_model = os.getenv("LMSTUDIO_MODEL", "text-embedding-nomic-embed-text-v2")
+            self.embedding_dimensions = int(os.getenv("EMBEDDING_DIMENSIONS", "768"))
+            self.openai_client = OpenAI(
+                base_url=lmstudio_url,
+                api_key="lm-studio"  # LM Studio doesn't require a real key
+            )
+            print(f"💻 Using LM Studio embeddings: {self.lmstudio_model} ({self.embedding_dimensions}D) at {lmstudio_url}")
+        else:
+            self.openai_client = OpenAI(
+                base_url="https://models.github.ai/inference",
+                api_key=os.getenv("GITHUB_TOKEN")
+            )
+            self.embedding_dimensions = 1536  # text-embedding-3-small dimensions
+            print(f"🌐 Using GitHub Models embeddings: text-embedding-3-small ({self.embedding_dimensions}D)")
         
     def connect_db(self):
         """Connect to PostgreSQL database."""
@@ -60,24 +83,41 @@ class DocumentIndexer:
     
     def get_embedding(self, text: str) -> List[float]:
         """
-        Generate embeddings for text using GitHub Models.
+        Generate embeddings for text using configured provider (GitHub Models, Ollama, or LM Studio).
         
         Args:
             text: Text to embed
             
         Returns:
-            List of 1536 float values representing the embedding
+            List of float values representing the embedding (dimensions vary by model)
         """
         try:
-            response = self.openai_client.embeddings.create(
-                model="openai/text-embedding-3-small",
-                input=text
-            )
-            return response.data[0].embedding
+            if self.embedding_provider == "ollama":
+                # Use local Ollama for embeddings (no rate limits!)
+                response = ollama.embeddings(
+                    model=self.ollama_model,
+                    prompt=text,
+                    options={"host": self.ollama_host}
+                )
+                return response["embedding"]
+            elif self.embedding_provider == "lmstudio":
+                # Use LM Studio with OpenAI-compatible API
+                response = self.openai_client.embeddings.create(
+                    model=self.lmstudio_model,
+                    input=text
+                )
+                return response.data[0].embedding
+            else:
+                # Use GitHub Models for embeddings
+                response = self.openai_client.embeddings.create(
+                    model="openai/text-embedding-3-small",
+                    input=text
+                )
+                return response.data[0].embedding
         except Exception as e:
             print(f"    ⚠️  Warning: Failed to generate embedding: {e}")
             # Return zero vector as fallback
-            return [0.0] * 1536
+            return [0.0] * self.embedding_dimensions
     
 
     

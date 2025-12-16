@@ -44,11 +44,20 @@ jobs:
         run: |
           docker compose -f docker-compose.infrastructure.yml pull postgres redis
 
-      - name: Build infrastructure services
+      - name: Build portal service
         run: |
-          DOCKER_BUILDKIT=1 docker compose -f docker-compose.infrastructure.yml build \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
+          docker buildx build \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=max \
+            --load \
+            -t ai-agents-playground-portal:latest \
+            -f portal/Dockerfile \
             portal
+      
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
       - name: Verify images were created
         run: |

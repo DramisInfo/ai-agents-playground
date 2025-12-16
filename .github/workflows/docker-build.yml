@@ -101,6 +101,10 @@ jobs:
           cp .env.example .env
           sed -i 's/your_github_personal_access_token_here/dummy_token_for_ci_build/g' .env
 
+      - name: Generate package lock file
+        working-directory: ./portal
+        run: npm install --package-lock-only
+
       - name: Build ${{ matrix.profile }} services
         run: |
           docker compose -f docker-compose.infrastructure.yml --profile ${{ matrix.profile }} build

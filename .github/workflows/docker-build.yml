@@ -70,7 +70,7 @@ jobs:
           echo "Checking for redis image..."
           docker images redis:7-alpine || { echo "Redis image not found"; exit 1; }
           
-          echo "All images verified successfully!"
+          echo "All images verified successfully"
 
   build-lessons:
     name: Build Lesson Services

@@ -7,6 +7,7 @@ import asyncio
 import time
 import os
 from typing import Optional
+from fastapi import HTTPException
 from agent_framework import ChatAgent
 from agent_framework.openai import OpenAIChatClient
 from .knowledge_base import KNOWLEDGE_BASE
@@ -81,57 +82,28 @@ def process_ticket_ai(ticket_id: str, question: str) -> dict:
         question: The user's question
         
     Returns:
-        dict with response details and metrics
+        dict with response details
     """
     start_time = time.time()
     
     try:
         # Run the async agent in sync context
         answer = asyncio.run(run_agent(question))
-        
-        # Calculate metrics
         response_time = time.time() - start_time
-        accuracy = 0.92  # AI agent has high accuracy
         
-        response = {
+        print(f"[AI Agent] Ticket {ticket_id} processed in {response_time:.2f}s")
+        
+        return {
             "ticket_id": ticket_id,
             "question": question,
             "answer": answer,
             "mode": "ai",
-            "metrics": {
-                "response_time_seconds": round(response_time, 2),
-                "accuracy_score": accuracy,
-                "context_understanding": True,
-                "processing_notes": "Processed using Microsoft Agent Framework with GitHub Models"
-            },
-            "ai_features": [
-                "Real LLM-powered responses",
-                "Context-aware understanding",
-                "Natural language processing",
-                "Multi-turn conversation support",
-                "Knowledge base integration"
-            ]
+            "response_time": round(response_time, 2)
         }
-        
-        print(f"[AI Agent] Ticket {ticket_id} processed in {response_time:.2f}s")
-        return response
         
     except Exception as e:
-        print(f"[AI Agent] Error processing ticket {ticket_id}: {str(e)}")
-        # Fallback to manual mode if agent fails
-        return {
-            "ticket_id": ticket_id,
-            "question": question,
-            "answer": f"I apologize, but I'm having trouble processing your request right now. Error: {str(e)}\n\nPlease try again or contact support@techflow.com",
-            "mode": "ai_error",
-            "metrics": {
-                "response_time_seconds": round(time.time() - start_time, 2),
-                "accuracy_score": 0.0,
-                "context_understanding": False,
-                "processing_notes": f"AI agent error: {str(e)}"
-            },
-            "ai_features": []
-        }
+        print(f"[AI Agent] Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI agent error: {str(e)}")
 
 
 async def run_agent(question: str) -> str:
@@ -147,35 +119,3 @@ async def run_agent(question: str) -> str:
     agent = await get_agent()
     result = await agent.run(question)
     return result.text
-
-
-def get_ai_stats() -> dict:
-    """
-    Return statistics about AI processing mode.
-    
-    Returns:
-        dict with performance statistics
-    """
-    return {
-        "mode": "ai",
-        "average_response_time": "2-4 seconds",
-        "accuracy_rate": "92%",
-        "tickets_requiring_escalation": "8%",
-        "method": "Microsoft Agent Framework with GitHub Models (gpt-4o-mini)",
-        "framework": "agent-framework",
-        "llm_provider": "GitHub Models",
-        "capabilities": [
-            "Real LLM-powered natural language understanding",
-            "Context-aware responses using GitHub Models",
-            "Knowledge base integration",
-            "Handles complex and multi-part questions",
-            "Graceful error handling and escalation",
-            "Professional and consistent tone"
-        ],
-        "improvements_over_manual": {
-            "speed": "Variable (real LLM calls)",
-            "accuracy": "~42% improvement",
-            "escalation_reduction": "~77% fewer escalations",
-            "context_understanding": "Significantly better"
-        }
-    }

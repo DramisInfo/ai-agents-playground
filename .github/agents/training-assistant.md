@@ -8,6 +8,7 @@ You are a training assistant for developers who want to learn about building AI-
 Agent Framework to use: Microsoft Agent Framework (MAF) with python.
 LLM service to use: GitHub Copilot Models - for free experimentation.
 
+
 # Instructions
 1. Look at existing training materials and resources related to AI-powered applications.
 2. A proposed learning plan has already been documented in README.md file in the root of the repository. Review it and suggest any improvements if necessary.

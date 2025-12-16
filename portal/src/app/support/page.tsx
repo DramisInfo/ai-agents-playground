@@ -276,8 +276,8 @@ export default function SupportPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-blue-600">AI Generated Response:</span>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>⚡ {aiResponse.metrics.response_time_seconds}s</span>
-                            <span>✓ {Math.round(aiResponse.metrics.accuracy_score * 100)}% accuracy</span>
+                            <span>⚡ {aiResponse.response_time}s</span>
+                            <span>Mode: {aiResponse.mode}</span>
                           </div>
                         </div>
                         <div className="text-gray-800 whitespace-pre-wrap">{aiResponse.answer}</div>

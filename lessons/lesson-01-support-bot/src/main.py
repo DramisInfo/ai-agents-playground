@@ -10,9 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from .manual import process_ticket_manual, get_manual_stats
-from .agent import process_ticket_ai, get_ai_stats
-from .metrics import record_ticket_metrics, get_metrics_summary, get_metrics_report
+from .manual import process_ticket_manual
+from .agent import process_ticket_ai
 
 # Load environment variables
 load_dotenv()
@@ -45,7 +44,7 @@ class TicketResponse(BaseModel):
     question: str
     answer: str
     mode: str
-    metrics: dict
+    response_time: float
 
 
 @app.get("/")
@@ -55,18 +54,10 @@ def root():
     
     return {
         "service": "TechFlow Support Bot",
-        "lesson": "01 - First Line of Defense",
-        "version": "1.0.0",
+        "lesson": "01 - Introduction to AI Agents",
         "ai_enabled": ai_enabled,
         "mode": "AI-Powered" if ai_enabled else "Manual",
-        "endpoints": {
-            "POST /ticket": "Submit a support ticket",
-            "GET /metrics": "Get performance metrics",
-            "GET /stats": "Get current mode statistics",
-            "GET /health": "Health check"
-        },
-        "feature_flag": "ENABLE_AI_SUPPORT_BOT",
-        "documentation": "/docs"
+        "feature_flag": "ENABLE_AI_SUPPORT_BOT"
     }
 
 
@@ -102,80 +93,13 @@ def create_ticket(request: TicketRequest):
     try:
         if ai_enabled:
             # AI-powered processing
-            result = process_ticket_ai(ticket_id, request.question)
+            return process_ticket_ai(ticket_id, request.question)
         else:
             # Manual rule-based processing
-            result = process_ticket_manual(ticket_id, request.question)
-        
-        # Record metrics
-        record_ticket_metrics(result)
-        
-        return result
+            return process_ticket_manual(ticket_id, request.question)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing ticket: {str(e)}")
-
-
-@app.get("/metrics")
-def get_metrics():
-    """
-    Get performance metrics and comparison between modes.
-    
-    Returns summary statistics, response times, accuracy, and ROI calculations.
-    """
-    try:
-        summary = get_metrics_summary()
-        report = get_metrics_report()
-        
-        return {
-            "summary": summary,
-            "report": report
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving metrics: {str(e)}")
-
-
-@app.get("/stats")
-def get_stats():
-    """
-    Get statistics about the current processing mode.
-    
-    Returns capabilities and performance characteristics of active mode.
-    """
-    ai_enabled = os.getenv("ENABLE_AI_SUPPORT_BOT", "false").lower() == "true"
-    
-    if ai_enabled:
-        stats = get_ai_stats()
-    else:
-        stats = get_manual_stats()
-    
-    stats["feature_flag_value"] = os.getenv("ENABLE_AI_SUPPORT_BOT", "false")
-    
-    return stats
-
-
-@app.get("/examples")
-def get_example_questions():
-    """
-    Get example questions to test the support bot.
-    
-    Returns a list of common support questions for testing.
-    """
-    return {
-        "examples": [
-            "What are the features of CloudSync Enterprise?",
-            "How much does the DevOps Accelerator cost?",
-            "Can I get a free trial?",
-            "I forgot my password, how do I reset it?",
-            "What are your support hours?",
-            "How do I upgrade my plan?",
-            "How do I integrate with Slack?",
-            "The system is running slow, what should I do?",
-            "What is your refund policy?",
-            "Tell me about your company"
-        ],
-        "usage": "POST /ticket with { \"question\": \"<your question>\" }"
-    }
 
 
 if __name__ == "__main__":

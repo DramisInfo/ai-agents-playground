@@ -31,10 +31,7 @@ export async function POST(request: Request) {
       question,
       answer: 'This is a mock response. Start the support-bot service to see real AI-powered responses.',
       mode: aiEnabled ? 'ai' : 'manual',
-      metrics: {
-        response_time_seconds: aiEnabled ? 1.2 : 5.5,
-        accuracy_score: aiEnabled ? 0.92 : 0.65,
-      },
+      response_time: aiEnabled ? 1.2 : 5.5,
     });
   } catch (error) {
     console.error('Error processing support ticket:', error);

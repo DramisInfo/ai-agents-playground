@@ -1,4 +1,8 @@
-# Document Processing
+# Web Framework
+fastapi==0.115.0
+uvicorn==0.32.0
+
+# Document Processing (for indexer)
 docling==2.65.0
 docling-core
 

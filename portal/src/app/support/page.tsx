@@ -28,6 +28,7 @@ export default function SupportPage() {
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [loading, setLoading] = useState(true);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiMode, setAiMode] = useState<'lesson-01' | 'lesson-02' | null>(null);
   const [aiResponse, setAiResponse] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -38,13 +39,38 @@ export default function SupportPage() {
 
   const checkAiStatus = async () => {
     try {
-      const res = await fetch('http://localhost:8001/health');
-      const data = await res.json();
-      setAiEnabled(data.ai_enabled === true);
+      // Check Lesson 2 first (FAQ Expert - RAG) - takes priority
+      const faqRes = await fetch('http://localhost:8002/health');
+      if (faqRes.ok) {
+        const faqData = await faqRes.json();
+        if (faqData.ai_enabled === true) {
+          setAiEnabled(true);
+          setAiMode('lesson-02');
+          return;
+        }
+      }
     } catch (error) {
-      console.error('Error checking AI status:', error);
-      setAiEnabled(false);
+      // FAQ Expert not available, check Lesson 1
     }
+
+    try {
+      // Check Lesson 1 (Support Bot)
+      const supportRes = await fetch('http://localhost:8001/health');
+      if (supportRes.ok) {
+        const supportData = await supportRes.json();
+        if (supportData.ai_enabled === true) {
+          setAiEnabled(true);
+          setAiMode('lesson-01');
+          return;
+        }
+      }
+    } catch (error) {
+      // Support Bot not available
+    }
+
+    // No AI services available or enabled
+    setAiEnabled(false);
+    setAiMode(null);
   };
 
   const fetchTickets = async () => {
@@ -63,18 +89,40 @@ export default function SupportPage() {
     setAiLoading(true);
     setAiResponse(null);
     try {
-      const res = await fetch('http://localhost:8001/ticket', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: ticket.description,
-          user_email: ticket.customer_email
-        })
-      });
-      const data = await res.json();
-      setAiResponse(data);
+      if (aiMode === 'lesson-02') {
+        // Lesson 2: FAQ Expert with RAG
+        const res = await fetch('http://localhost:8002/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: ticket.description
+          })
+        });
+        const data = await res.json();
+        setAiResponse({
+          ...data,
+          lesson: 'lesson-02',
+          response_time: data.total_time || data.response_time
+        });
+      } else if (aiMode === 'lesson-01') {
+        // Lesson 1: Support Bot
+        const res = await fetch('http://localhost:8001/ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: ticket.description,
+            user_email: ticket.customer_email
+          })
+        });
+        const data = await res.json();
+        setAiResponse({
+          ...data,
+          lesson: 'lesson-01'
+        });
+      }
     } catch (error) {
       console.error('Error getting AI response:', error);
+      alert(`Error connecting to AI service (${aiMode}). Make sure the service is running.`);
     } finally {
       setAiLoading(false);
     }
@@ -130,13 +178,17 @@ export default function SupportPage() {
           {aiEnabled && (
             <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
               <Sparkles className="h-5 w-5" />
-              <span className="font-semibold">AI Enabled</span>
+              <span className="font-semibold">
+                {aiMode === 'lesson-02' ? 'AI-RAG Enabled (Lesson 2)' : 'AI Enabled (Lesson 1)'}
+              </span>
             </div>
           )}
         </div>
         <p className="text-gray-600">
           {aiEnabled 
-            ? 'AI-powered support - Average response time: 1.2 seconds' 
+            ? aiMode === 'lesson-02'
+              ? 'AI-RAG powered support with vector search - Average response time: 3-5 seconds'
+              : 'AI-powered support - Average response time: 1-2 seconds'
             : 'Manual ticket management - Average response time: 45 minutes'}
         </p>
         
@@ -186,7 +238,10 @@ export default function SupportPage() {
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
+                  onClick={() => {
+                    setSelectedTicket(ticket);
+                    setAiResponse(null); // Clear previous AI response
+                  }}
                   className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
                     selectedTicket?.id === ticket.id ? 'border-techflow-primary bg-blue-50' : 'border-gray-200'
                   }`}
@@ -249,7 +304,7 @@ export default function SupportPage() {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                       <Sparkles className="h-5 w-5 text-blue-600" />
-                      AI-Powered Instant Response
+                      {aiMode === 'lesson-02' ? 'AI-RAG Powered Response (Lesson 2)' : 'AI-Powered Instant Response (Lesson 1)'}
                     </h3>
                     <button
                       onClick={() => getAiResponse(selectedTicket)}
@@ -274,14 +329,38 @@ export default function SupportPage() {
                     <div className="space-y-4">
                       <div className="bg-white p-4 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-blue-600">AI Generated Response:</span>
+                          <span className="text-sm font-medium text-blue-600">
+                            {aiMode === 'lesson-02' ? 'AI-RAG Generated Response:' : 'AI Generated Response:'}
+                          </span>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>⚡ {aiResponse.response_time}s</span>
                             <span>Mode: {aiResponse.mode}</span>
+                            <span className="font-semibold text-blue-600">{aiResponse.lesson}</span>
                           </div>
                         </div>
                         <div className="text-gray-800 whitespace-pre-wrap">{aiResponse.answer}</div>
                       </div>
+                      
+                      {/* Show sources for Lesson 2 RAG */}
+                      {aiMode === 'lesson-02' && aiResponse.sources && aiResponse.sources.length > 0 && (
+                        <div className="bg-white p-4 rounded-lg border border-blue-200">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">📚 Knowledge Sources:</h4>
+                          <div className="space-y-2">
+                            {aiResponse.sources.map((source: any, idx: number) => (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                <div>
+                                  <div className="font-medium text-gray-900">{source.title}</div>
+                                  <div className="text-xs text-gray-500">{source.filename}</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-blue-600">{(source.similarity * 100).toFixed(1)}%</div>
+                                  <div className="text-xs text-gray-500">similarity</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="flex gap-2">
                         <button

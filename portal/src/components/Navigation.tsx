@@ -10,6 +10,7 @@ export default function Navigation() {
   const links = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/support', label: 'Support', icon: MessageSquare },
+    { href: '/faq', label: 'FAQ Expert', icon: FileText },
     { href: '/sales', label: 'Sales', icon: Briefcase },
     { href: '/developer', label: 'Developer', icon: Code },
     { href: '/hr', label: 'HR', icon: Users },

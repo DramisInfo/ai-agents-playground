@@ -55,15 +55,15 @@ services:
       - "3000:3000"
     environment:
       # Feature Flags
-      ENABLE_SUPPORT_BOT: ${ENABLE_SUPPORT_BOT:-false}
-      ENABLE_FAQ_EXPERT: ${ENABLE_FAQ_EXPERT:-false}
-      ENABLE_SMART_ROUTER: ${ENABLE_SMART_ROUTER:-false}
-      ENABLE_SALES_ASSISTANT: ${ENABLE_SALES_ASSISTANT:-false}
-      ENABLE_CODE_REVIEWER: ${ENABLE_CODE_REVIEWER:-false}
-      ENABLE_ONBOARDING_COACH: ${ENABLE_ONBOARDING_COACH:-false}
-      ENABLE_INVOICE_PROCESSOR: ${ENABLE_INVOICE_PROCESSOR:-false}
-      ENABLE_RESEARCH_TEAM: ${ENABLE_RESEARCH_TEAM:-false}
-      ENABLE_HR_ASSISTANT: ${ENABLE_HR_ASSISTANT:-false}
+      ENABLE_AI_SUPPORT_BOT: ${ENABLE_AI_SUPPORT_BOT:-false}
+      ENABLE_AI_FAQ_RAG: ${ENABLE_AI_FAQ_RAG:-false}
+      ENABLE_AI_SMART_ROUTER: ${ENABLE_AI_SMART_ROUTER:-false}
+      ENABLE_AI_SALES_ASSISTANT: ${ENABLE_AI_SALES_ASSISTANT:-false}
+      ENABLE_AI_CODE_REVIEWER: ${ENABLE_AI_CODE_REVIEWER:-false}
+      ENABLE_AI_ONBOARDING_COACH: ${ENABLE_AI_ONBOARDING_COACH:-false}
+      ENABLE_AI_INVOICE_PROCESSOR: ${ENABLE_AI_INVOICE_PROCESSOR:-false}
+      ENABLE_AI_RESEARCH_TEAM: ${ENABLE_AI_RESEARCH_TEAM:-false}
+      ENABLE_AI_HR_ASSISTANT: ${ENABLE_AI_HR_ASSISTANT:-false}
       # Database
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -133,6 +133,42 @@ services:
       - lesson-02
       - all-lessons
     restart: "no"  # Run once and exit
+
+  # FAQ Expert - Lesson 2: RAG-powered FAQ answering
+  faq-expert:
+    build:
+      context: ./lessons/lesson-02-faq-expert
+      dockerfile: Dockerfile
+    container_name: techflow-faq-expert
+    ports:
+      - "8002:8002"
+    environment:
+      ENABLE_AI_FAQ_RAG: ${ENABLE_AI_FAQ_RAG:-false}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-techflow}
+      POSTGRES_USER: ${POSTGRES_USER:-techflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techflow_pass_change_in_production}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_MODEL: ${GITHUB_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-github}
+      LMSTUDIO_URL: ${LMSTUDIO_URL:-http://host.docker.internal:1234/v1}
+      LMSTUDIO_MODEL: ${LMSTUDIO_MODEL:-text-embedding-nomic-embed-text-v2}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - techflow-network
+    # Only start if lesson 2 is being used
+    profiles:
+      - lesson-02
+      - all-lessons
 
 volumes:
   postgres_data:

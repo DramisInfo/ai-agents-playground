@@ -196,6 +196,7 @@ async def search_knowledge_base_tool(query: str, top_k: int = 3) -> str:
 async def get_agent() -> ChatAgent:
     """
     Get or create the FAQ Expert agent with tool-based RAG capabilities.
+    Supports GitHub Models or local LM Studio.
     
     Returns:
         ChatAgent instance configured with knowledge base search tool
@@ -204,22 +205,39 @@ async def get_agent() -> ChatAgent:
     
     async with _agent_lock:
         if _agent is None:
-            # Get configuration from environment
-            api_key = os.getenv("GITHUB_TOKEN")
-            model_id = os.getenv("GITHUB_MODEL", "gpt-4o-mini")
+            # Get LLM provider configuration
+            llm_provider = os.getenv("LLM_PROVIDER", "github").lower()
             
-            if not api_key:
-                raise ValueError(
-                    "GITHUB_TOKEN environment variable is required. "
-                    "Get your free token at https://github.com/settings/tokens"
+            # Create chat client based on provider
+            if llm_provider == "lmstudio":
+                # Use local LM Studio
+                lmstudio_url = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1")
+                lmstudio_model = os.getenv("LMSTUDIO_LLM_MODEL", "qwen/qwen3-4b-2507")
+                
+                chat_client = OpenAIChatClient(
+                    model_id=lmstudio_model,
+                    api_key="lm-studio",  # LM Studio doesn't require a real API key
+                    base_url=lmstudio_url
                 )
+                print(f"[Agent] Using LM Studio at {lmstudio_url} with model {lmstudio_model}")
             
-            # Create chat client for GitHub Models
-            chat_client = OpenAIChatClient(
-                model_id=model_id,
-                api_key=api_key,
-                base_url="https://models.inference.ai.azure.com"
-            )
+            else:
+                # Use GitHub Models (default)
+                api_key = os.getenv("GITHUB_TOKEN")
+                model_id = os.getenv("GITHUB_MODEL", "gpt-4o-mini")
+                
+                if not api_key:
+                    raise ValueError(
+                        "GITHUB_TOKEN environment variable is required. "
+                        "Get your free token at https://github.com/settings/tokens"
+                    )
+                
+                chat_client = OpenAIChatClient(
+                    model_id=model_id,
+                    api_key=api_key,
+                    base_url="https://models.inference.ai.azure.com"
+                )
+                print(f"[Agent] Using GitHub Models with model {model_id}")
             
             # Create the AI agent with tool-based RAG instructions
             _agent = ChatAgent(

@@ -92,8 +92,11 @@ services:
       - "8001:8001"
     environment:
       ENABLE_AI_SUPPORT_BOT: ${ENABLE_AI_SUPPORT_BOT:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-github}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_MODEL: ${GITHUB_MODEL:-gpt-4o-mini}
+      LMSTUDIO_URL: ${LMSTUDIO_URL:-http://host.docker.internal:1234/v1}
+      LMSTUDIO_LLM_MODEL: ${LMSTUDIO_LLM_MODEL:-qwen/qwen3-4b-2507}
     restart: unless-stopped
     networks:
       - techflow-network
@@ -149,10 +152,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-techflow}
       POSTGRES_USER: ${POSTGRES_USER:-techflow_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-techflow_pass_change_in_production}
+      LLM_PROVIDER: ${LLM_PROVIDER:-github}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_MODEL: ${GITHUB_MODEL:-gpt-4o-mini}
-      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-github}
       LMSTUDIO_URL: ${LMSTUDIO_URL:-http://host.docker.internal:1234/v1}
+      LMSTUDIO_LLM_MODEL: ${LMSTUDIO_LLM_MODEL:-qwen/qwen3-4b-2507}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-github}
       LMSTUDIO_MODEL: ${LMSTUDIO_MODEL:-text-embedding-nomic-embed-text-v2}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}

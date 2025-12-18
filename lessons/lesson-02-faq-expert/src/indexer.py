@@ -1,17 +1,24 @@
 """
 Document Indexer for Lesson 2: FAQ Expert
-Uses Docling to parse markdown files and stores embeddings in pgvector.
+Uses lightweight markdown parsing (no heavy ML dependencies!) with HybridChunker from docling-core.
 """
 
 import os
 import time
+import re
+import warnings
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 import psycopg2
 from psycopg2.extras import Json
 from pgvector.psycopg2 import register_vector
-from docling.document_converter import DocumentConverter
-from docling.chunking import HybridChunker
+import frontmatter
+
+# Suppress transformers warning (docling-core imports it for tokenization but we don't need models)
+warnings.filterwarnings('ignore', message='.*PyTorch.*TensorFlow.*Flax.*')
+
+from docling_core.types.doc import DoclingDocument, TextItem, DocItemLabel
+from docling_core.transforms.chunker import HybridChunker
 from openai import OpenAI
 import ollama
 from dotenv import load_dotenv
@@ -26,9 +33,7 @@ class DocumentIndexer:
     def __init__(self):
         """Initialize the document indexer."""
         self.conn = None
-        self.converter = DocumentConverter()
-        # Set max_tokens to 512 to stay well within embedding model's 8191 token limit
-        # This ensures chunks are a reasonable size for both embeddings and retrieval
+        # Use HybridChunker from docling-core (lightweight, no ML dependencies!)
         self.chunker = HybridChunker(max_tokens=512)
         
         # Configure embedding provider based on environment
@@ -121,6 +126,33 @@ class DocumentIndexer:
     
 
     
+    def markdown_to_docling_document(self, content: str, title: str) -> DoclingDocument:
+        """
+        Convert markdown content to a DoclingDocument for HybridChunker.
+        
+        Args:
+            content: Markdown content
+            title: Document title
+            
+        Returns:
+            DoclingDocument object
+        """
+        doc = DoclingDocument(name=title)
+        
+        # Split content by paragraphs and add as text items
+        paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
+        
+        for para in paragraphs:
+            # Detect if it's a heading (starts with #)
+            if para.startswith('#'):
+                label = DocItemLabel.SECTION_HEADER
+            else:
+                label = DocItemLabel.PARAGRAPH
+            
+            doc.add_text(text=para, label=label)
+        
+        return doc
+    
     def store_document(self, file_path: Path, title: str, chunks: List):
         """
         Store document and its chunks with embeddings in the database.
@@ -128,7 +160,7 @@ class DocumentIndexer:
         Args:
             file_path: Path to the document
             title: Document title
-            chunks: List of chunk objects from HybridChunker
+            chunks: List of text chunks
         """
         cursor = self.conn.cursor()
         
@@ -157,7 +189,7 @@ class DocumentIndexer:
             # Store chunks with embeddings
             print(f"  🔄 Generating embeddings for {len(chunks)} chunks...")
             for idx, chunk in enumerate(chunks):
-                # Get context-enriched text (better for embeddings)
+                # Get context-enriched text from HybridChunker
                 enriched_text = self.chunker.contextualize(chunk=chunk)
                 
                 # Generate embedding from enriched text
@@ -197,34 +229,33 @@ class DocumentIndexer:
             return
         
         print(f"\n📚 Found {len(md_files)} documents to index\n")
-        print(f"🔄 Batch converting with Docling...\n")
+        print(f"🔄 Processing markdown files...\n")
         
-        # Batch convert all documents using convert_all
-        results = self.converter.convert_all(
-            source=md_files,
-            raises_on_error=False  # Continue even if one fails
-        )
-        
-        # Process each converted document
-        for conv_result in results:
+        # Process each markdown file
+        for file_path in md_files:
             try:
-                file_path = Path(conv_result.input.file)
                 print(f"  📄 Processing: {file_path.name}")
                 
-                if conv_result.status.name == "SUCCESS":
-                    # Extract title from filename
-                    title = file_path.stem.replace("-", " ").title()
-                    
-                    # Chunk the document with HybridChunker
-                    chunks = [c for c in self.chunker.chunk(conv_result.document) if c.text.strip()]
-                    
-                    print(f"    ✓ Generated {len(chunks)} chunks")
-                    
-                    # Store in database
-                    self.store_document(file_path, title, chunks)
-                    
-                else:
-                    print(f"  ✗ Conversion failed: {conv_result.status.name}")
+                # Read markdown file with frontmatter
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    post = frontmatter.load(f)
+                
+                # Extract title (from frontmatter or filename)
+                title = post.get('title', file_path.stem.replace("-", " ").title())
+                
+                # Get content
+                content = post.content
+                
+                # Convert to DoclingDocument
+                doc = self.markdown_to_docling_document(content, title)
+                
+                # Chunk using HybridChunker
+                chunks = [c for c in self.chunker.chunk(doc) if c.text.strip()]
+                
+                print(f"    ✓ Generated {len(chunks)} chunks")
+                
+                # Store in database
+                self.store_document(file_path, title, chunks)
                 
             except Exception as e:
                 print(f"  ✗ Failed to process {file_path.name}: {e}")

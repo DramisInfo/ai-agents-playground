@@ -1,11 +1,12 @@
 """
 AI-powered FAQ Expert with RAG (Retrieval-Augmented Generation).
-Uses vector search to find relevant knowledge and generates accurate answers.
+Uses tools for vector search - agent decides when to retrieve knowledge.
 """
 
 import asyncio
 import time
 import os
+import json
 from typing import Optional, List, Dict
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -133,12 +134,71 @@ def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
     return [dict(row) for row in results]
 
 
-async def get_agent() -> ChatAgent:
+async def search_knowledge_base_tool(query: str, top_k: int = 3) -> str:
     """
-    Get or create the FAQ Expert agent with RAG capabilities.
+    Search the FlowCRM/FlowAnalytics knowledge base for relevant documentation.
+    
+    Use this tool when you need to find information about:
+    - FlowCRM features (contacts, email integration, workflows, etc.)
+    - FlowAnalytics features (data sources, dashboards, reports, etc.)
+    - How-to guides and step-by-step instructions
+    - Troubleshooting and technical support
+    - Best practices and recommendations
+    - Account and permission management
+    
+    Args:
+        query: Search query - use specific keywords from the user's question
+               Examples: "import contacts CSV", "email integration setup", "user permissions"
+        top_k: Number of results to return (default: 3, max: 5)
     
     Returns:
-        ChatAgent instance configured for knowledge retrieval
+        JSON string containing relevant knowledge base articles with their content,
+        titles, source files, and similarity scores.
+    """
+    # Limit top_k to reasonable bounds
+    top_k = max(1, min(top_k, 5))
+    
+    try:
+        results = search_knowledge_base(query, top_k)
+        
+        if not results:
+            return json.dumps({
+                "results": [],
+                "count": 0,
+                "message": "No relevant documentation found for this query."
+            }, indent=2)
+        
+        # Format results for the agent
+        formatted_results = {
+            "results": [
+                {
+                    "content": chunk["content"],
+                    "title": chunk["title"],
+                    "source_file": chunk["filename"],
+                    "relevance_score": round(chunk["similarity"], 3)
+                }
+                for chunk in results
+            ],
+            "count": len(results),
+            "query": query
+        }
+        
+        return json.dumps(formatted_results, indent=2)
+    
+    except Exception as e:
+        return json.dumps({
+            "error": f"Failed to search knowledge base: {str(e)}",
+            "results": [],
+            "count": 0
+        }, indent=2)
+
+
+async def get_agent() -> ChatAgent:
+    """
+    Get or create the FAQ Expert agent with tool-based RAG capabilities.
+    
+    Returns:
+        ChatAgent instance configured with knowledge base search tool
     """
     global _agent
     
@@ -161,131 +221,137 @@ async def get_agent() -> ChatAgent:
                 base_url="https://models.inference.ai.azure.com"
             )
             
-            # Create the AI agent with RAG instructions
+            # Create the AI agent with tool-based RAG instructions
             _agent = ChatAgent(
                 chat_client=chat_client,
                 instructions="""You are an expert FAQ assistant for FlowCRM and FlowAnalytics products.
 
-Your role is to answer customer questions using the provided knowledge base context.
+Your role is to answer customer questions by using the search_knowledge_base tool to find relevant documentation.
 
-Guidelines:
-1. **Use the provided context**: Base your answers on the knowledge base chunks provided
-2. **Be accurate**: Only provide information that's in the context - don't make things up
-3. **Be helpful**: If the context doesn't contain the answer, say so and suggest alternatives
-4. **Be concise**: Provide clear, direct answers without unnecessary details
-5. **Cite sources**: When referencing specific features or steps, mention which document they're from
-6. **Format nicely**: Use bullet points and clear structure when appropriate
+How to answer questions:
+1. **Search first**: Use the search_knowledge_base tool with specific keywords from the user's question
+2. **Multiple searches**: You can search multiple times with different queries if needed
+3. **Combine information**: If multiple sources are needed, make additional searches
+4. **Be accurate**: Only provide information from the search results - don't make things up
+5. **Cite sources**: Reference the document titles and be specific about where information comes from
+6. **Be concise**: Provide clear, helpful answers without unnecessary details
 
-If the question cannot be answered with the provided context:
+Tool usage tips:
+- Use specific keywords: "import CSV contacts" is better than "how to add people"
+- Search for related topics if the first search doesn't have enough information
+- Use top_k=3 for most questions, increase to 5 for complex topics
+
+If you can't find the answer after searching:
 - Acknowledge what you don't know
 - Suggest related topics that might help
 - Recommend contacting support for specialized questions
 
-Always maintain a professional, friendly tone.""",
-                name="FlowCRM_FAQ_Expert"
+Always maintain a professional, friendly tone and format your answers clearly.""",
+                name="FlowCRM_FAQ_Expert",
+                tools=[search_knowledge_base_tool]  # Register the search tool
             )
         
         return _agent
 
 
-async def run_agent_with_context(question: str, context_chunks: List[Dict]) -> str:
+async def run_agent_with_tools(question: str) -> tuple[str, List[Dict]]:
     """
-    Run the agent with retrieved context to answer the question.
-    
+    Run the agent with tool-based RAG - agent decides when to search.
+
     Args:
         question: User's question
-        context_chunks: Retrieved knowledge chunks
-        
+
     Returns:
-        Generated answer
+        Tuple of (answer text, list of tool calls made)
     """
     agent = await get_agent()
-    
-    # Build context from retrieved chunks
-    context_text = "\n\n---\n\n".join([
-        f"**Source: {chunk['title']}** (similarity: {chunk['similarity']:.2%})\n{chunk['content']}"
-        for chunk in context_chunks
-    ])
-    
-    # Create the prompt with context
-    prompt = f"""Please answer the following question based on the provided knowledge base context:
 
-QUESTION: {question}
+    # Simply ask the question - agent will use tools as needed
+    response = await agent.run(question)
 
-KNOWLEDGE BASE CONTEXT:
-{context_text}
-
-Please provide a helpful, accurate answer based on the context above."""
-    
-    # Get response from agent
-    response = await agent.run(prompt)
-    
-    # Extract text from response
+    # Extract the answer text
     if hasattr(response, 'text'):
-        return response.text
+        answer = response.text
     elif hasattr(response, 'content'):
-        return response.content
+        answer = response.content
     else:
-        return str(response)
+        answer = str(response)
+
+    # Extract tool calls to track what the agent searched for
+    tool_calls = []
+    if hasattr(response, 'messages'):
+        for msg in response.messages:
+            if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                for tc in msg.tool_calls:
+                    if hasattr(tc, 'function'):
+                        tool_calls.append({
+                            "tool": tc.function.name,
+                            "arguments": json.loads(tc.function.arguments) if isinstance(tc.function.arguments, str) else tc.function.arguments
+                        })
+
+    return answer, tool_calls
 
 
 def process_faq_ai(question: str) -> dict:
     """
-    Process an FAQ question using RAG-powered AI agent.
-    
+    Process an FAQ question using tool-based RAG AI agent.
+
+    The agent autonomously decides when and how to search the knowledge base.
+
     Args:
         question: The user's question
-        
+
     Returns:
-        dict with response details including sources
+        dict with response details including tool calls and sources
     """
     start_time = time.time()
-    
+
     try:
-        # Step 1: Search knowledge base for relevant context
-        search_start = time.time()
-        context_chunks = search_knowledge_base(question, top_k=3)
-        search_time = time.time() - search_start
-        
-        if not context_chunks:
-            return {
-                "question": question,
-                "answer": "I couldn't find relevant information in the knowledge base. Please contact support for assistance.",
-                "mode": "ai-rag",
-                "sources": [],
-                "search_time": round(search_time, 3),
-                "total_time": round(time.time() - start_time, 3)
-            }
-        
-        # Step 2: Generate answer using LLM with context
-        generation_start = time.time()
-        answer = asyncio.run(run_agent_with_context(question, context_chunks))
-        generation_time = time.time() - generation_start
-        
-        # Extract sources
-        sources = [
-            {
-                "title": chunk["title"],
-                "filename": chunk["filename"],
-                "similarity": round(chunk["similarity"], 3)
-            }
-            for chunk in context_chunks
-        ]
-        
+        # Let the agent handle the question using tools
+        answer, tool_calls = asyncio.run(run_agent_with_tools(question))
+
         total_time = time.time() - start_time
-        
-        print(f"[AI-RAG] Question processed in {total_time:.2f}s (search: {search_time:.3f}s, generation: {generation_time:.3f}s)")
-        
+
+        # Extract sources from tool calls
+        sources = []
+        search_queries = []
+
+        for tc in tool_calls:
+            if tc["tool"] == "search_knowledge_base_tool":
+                query = tc["arguments"].get("query", "")
+                search_queries.append(query)
+
+        # For source tracking, do a quick search with the last query used
+        # (in a production system, you'd capture this from tool results)
+        if search_queries:
+            last_search = search_knowledge_base(search_queries[-1], top_k=3)
+            sources = [
+                {
+                    "title": chunk["title"],
+                    "filename": chunk["filename"],
+                    "similarity": round(chunk["similarity"], 3)
+                }
+                for chunk in last_search
+            ]
+
+        print(f"[AI-RAG-TOOL] Question processed in {total_time:.2f}s")
+        print(f"[AI-RAG-TOOL] Tool calls: {len(tool_calls)}")
+        for i, tc in enumerate(tool_calls, 1):
+            if 'arguments' in tc:
+                print(f"  {i}. {tc['tool']}({tc['arguments']})")
+            else:
+                print(f"  {i}. {tc['tool']}")
+
         return {
             "question": question,
             "answer": answer,
-            "mode": "ai-rag",
+            "mode": "ai-rag-tool",
             "sources": sources,
-            "search_time": round(search_time, 3),
-            "generation_time": round(generation_time, 3),
+            "tool_calls": len(tool_calls),
+            "search_queries": search_queries,
             "total_time": round(total_time, 3)
         }
-    
+
     except Exception as e:
         print(f"[ERROR] AI processing failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"AI processing error: {str(e)}")

@@ -92,6 +92,7 @@ export default function FAQPage() {
     "How do I create custom fields?"
   ];
 
+
   return (
     <div className="space-y-6">
       {/* Header with AI Status */}
@@ -318,6 +319,8 @@ export default function FAQPage() {
               </div>
             </div>
           )}
+
+
 
           {/* Matched FAQ (for manual mode) */}
           {response.matched_faq && response.matched_faq !== 'none' && (

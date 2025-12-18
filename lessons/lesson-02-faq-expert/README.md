@@ -1,8 +1,8 @@
-# Lesson 2: FAQ Expert - RAG-Powered Knowledge Search
+# Lesson 2: FAQ Expert - Tool-Based RAG
 
 ## 🎯 Learning Objectives
 
-Learn how to build an intelligent FAQ system using **Retrieval-Augmented Generation (RAG)** with vector embeddings and semantic search. This lesson demonstrates the transformational power of AI for knowledge retrieval compared to traditional keyword-based systems.
+Learn how to build an intelligent FAQ system using **Tool-Based Retrieval-Augmented Generation (RAG)** where the AI agent autonomously decides when and how to search the knowledge base. This lesson demonstrates the power of giving agents **tools** instead of pre-loading context, enabling more efficient and intelligent information retrieval.
 
 ## 📊 Business Impact
 
@@ -11,31 +11,46 @@ Learn how to build an intelligent FAQ system using **Retrieval-Augmented Generat
 - ❌ Limited coverage (only ~10 predefined FAQs)
 - ❌ Requires constant manual updates to FAQ database
 
-**Solution**: RAG-powered FAQ Expert that:
+**Solution**: Tool-Based RAG FAQ Expert that:
 - ✅ 90%+ accuracy with semantic understanding
+- ✅ Agent decides when to search (not pre-loaded context)
+- ✅ Can perform multiple searches to gather complete information
 - ✅ Full knowledge base coverage (18 documents, 212 chunks)
 - ✅ Handles natural language, synonyms, and complex queries
 - ✅ Provides source citations with confidence scores
+- ✅ Better token efficiency (only retrieves what's needed)
 
 **Impact**: 
 - **10x better coverage** - Entire knowledge base vs 10 FAQs
 - **2x better accuracy** - 90% vs 45% success rate
 - **Better UX** - Natural language understanding vs exact keyword matching
+- **Agent autonomy** - Decides search strategy based on question complexity
 
 ---
 
 ## 🏗️ Architecture
 
+### Traditional RAG (Context Injection)
 ```
-User Question → Vector Search (pgvector) → Top 3 Relevant Chunks → LLM + Context → Answer with Sources
+User Question → Vector Search → Inject ALL Chunks into Prompt → LLM → Answer
+                 (fixed)          (uses tokens)
+```
+
+### Tool-Based RAG (This Lesson)
+```
+User Question → Agent Thinks → Calls search_knowledge_base(query) → Results → Agent Reasons → Answer
+                    ↓                                                           ↑
+                Can search multiple times with different queries ──────────────┘
 ```
 
 ### RAG Pipeline (AI Enabled)
-1. **Query Embedding**: Convert user question to vector using same model as indexing
-2. **Vector Search**: Find top 3 most similar chunks using cosine similarity
-3. **Context Building**: Assemble relevant chunks with metadata
-4. **LLM Generation**: Generate answer using retrieved context
-5. **Source Citations**: Return sources with similarity scores
+1. **Agent Receives Question**: Agent analyzes the user's question
+2. **Autonomous Tool Decision**: Agent decides if/when/how to search
+3. **Tool Call - Vector Search**: Agent calls `search_knowledge_base_tool(query, top_k)`
+4. **Results Processing**: Agent receives search results as JSON
+5. **Multi-Step Reasoning**: Agent can make additional searches if needed
+6. **Answer Generation**: Agent synthesizes answer from tool results
+7. **Source Citations**: Return sources with similarity scores and tool calls made
 
 ### Manual Fallback (AI Disabled)
 1. **Keyword Matching**: Simple string matching in predefined FAQs
@@ -207,7 +222,7 @@ lesson-02-faq-expert/
 | Mode | Result |
 |------|--------|
 | Manual | ❌ Fails - Tries to match one topic |
-| AI-RAG | ✅ Works - Retrieves multiple relevant chunks |
+| AI-RAG-Tool | ✅ **Superior** - Agent can search multiple times for different aspects |
 
 ### Scenario 5: Out of Domain
 **Question**: "What's the weather today?"
@@ -228,38 +243,64 @@ lesson-02-faq-expert/
 - **Handles**: Only exact keyword matches
 - **Limitations**: No semantic understanding, no context
 
-### AI-RAG Mode (ENABLE_AI_FAQ_RAG=true)
+### AI-RAG-Tool Mode (ENABLE_AI_FAQ_RAG=true)
 - **Accuracy**: 90%+
 - **Coverage**: Entire knowledge base (18 docs, 212 chunks)
-- **Response Time**: ~1-3 seconds (includes vector search + LLM)
-- **Handles**: Natural language, synonyms, complex queries
+- **Response Time**: ~1-4 seconds (agent reasoning + tool calls)
+- **Handles**: Natural language, synonyms, complex queries, multi-part questions
+- **Advantages**:
+  - Agent decides when/how to search (autonomous)
+  - Can make multiple tool calls for complex questions
+  - Better token efficiency (only searches what's needed)
+  - Transparent (see what agent searched for)
+- **Tool Calls**: Typically 1-3 searches per question depending on complexity
 - **Benefits**: Context-aware, source citations, handles variations
 
 ---
 
 ## 🎓 Key Concepts Learned
 
-### 1. Vector Embeddings
+### 1. Tool-Based RAG vs Context Injection
+**Context Injection (Traditional RAG)**:
+- Pre-retrieve all context before LLM call
+- Inject chunks directly into prompt
+- Fixed, single search
+- Uses more tokens (all context loaded)
+
+**Tool-Based RAG (This Lesson)**:
+- Agent decides when to search
+- Can make multiple tool calls
+- Dynamic, adaptive retrieval
+- More efficient token usage
+
+### 2. Agent Tools
+- Functions that agents can call autonomously
+- Defined with clear docstrings (agent reads these!)
+- Return structured data (JSON) for agent processing
+- Enable multi-step reasoning and iteration
+
+### 3. Vector Embeddings
 - Convert text to numerical vectors that capture semantic meaning
 - Similar concepts have similar vectors (cosine similarity)
 - Enables semantic search beyond keyword matching
 
-### 2. Vector Databases
+### 4. Vector Databases
 - **pgvector** extension for PostgreSQL
 - Efficient similarity search with indexes (HNSW, IVFFlat)
 - Store embeddings alongside relational data
 
-### 3. Retrieval-Augmented Generation (RAG)
-- Retrieve relevant context before generation
+### 5. Retrieval-Augmented Generation (RAG)
+- Retrieve relevant context before/during generation
 - Grounds LLM responses in your data
 - Reduces hallucinations and improves accuracy
+- Tool-based RAG adds agent autonomy
 
-### 4. Chunking Strategies
+### 6. Chunking Strategies
 - Split documents into semantic chunks
 - Balance between context and precision
 - Use Docling's HybridChunker for smart splitting
 
-### 5. Embedding Models
+### 7. Embedding Models
 - **text-embedding-3-small** (GitHub Models) - 1536 dimensions
 - **nomic-embed-text** (Ollama/LM Studio) - 768 dimensions
 - Must use same model for indexing and querying
@@ -268,7 +309,43 @@ lesson-02-faq-expert/
 
 ## 🔍 Code Walkthrough
 
-### agent.py - RAG Implementation
+### agent.py - Tool-Based RAG
+
+```python
+# Define the tool that agent can call
+async def search_knowledge_base_tool(query: str, top_k: int = 3) -> str:
+    """
+    Search the FlowCRM/FlowAnalytics knowledge base.
+    
+    Use this tool when you need information about products, features, or support.
+    Args:
+        query: Search query with specific keywords
+        top_k: Number of results (default: 3, max: 5)
+    
+    Returns:
+        JSON with relevant documentation chunks
+    """
+    results = search_knowledge_base(query, top_k)
+    return json.dumps({"results": [...], "count": len(results)})
+
+# Create agent with the tool
+agent = ChatAgent(
+    chat_client=chat_client,
+    instructions="""You are an FAQ assistant.
+    
+    To answer questions:
+    1. Use search_knowledge_base tool to find relevant docs
+    2. You can search multiple times if needed
+    3. Only provide info from search results
+    4. Cite your sources""",
+    tools=[search_knowledge_base_tool]  # Register tool
+)
+
+# Agent autonomously decides when to call the tool
+response = await agent.run(user_question)
+```
+
+### Vector Search Function
 
 ```python
 def search_knowledge_base(query: str, top_k: int = 3) -> List[Dict]:
@@ -299,7 +376,7 @@ def ask_question(request: FAQRequest):
     ai_enabled = os.getenv("ENABLE_AI_FAQ_RAG", "false").lower() == "true"
     
     if ai_enabled:
-        return process_faq_ai(request.question)  # RAG pipeline
+        return process_faq_ai(request.question)  # Tool-based RAG
     else:
         return process_faq_manual(request.question)  # Keyword matching
 ```

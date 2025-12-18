@@ -2,9 +2,12 @@
 fastapi==0.115.0
 uvicorn==0.32.0
 
-# Document Processing (for indexer)
-docling==2.65.0
-docling-core
+# Document Processing - Core only (much lighter!)
+# Using docling-core for chunking without the heavy parsing dependencies
+docling-core[chunking]>=2.50.1,<3.0.0
+# For simple markdown parsing
+markdown>=3.7
+python-frontmatter>=1.1.0
 
 # Vector Database & Embeddings
 psycopg2-binary

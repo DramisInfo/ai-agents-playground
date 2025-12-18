@@ -57,6 +57,8 @@ class FAQResponse(BaseModel):
     generation_time: Optional[float] = None
     response_time: Optional[float] = None
     total_time: Optional[float] = None
+    tool_calls: Optional[int] = None
+    search_queries: Optional[List[str]] = None
 
 
 @app.get("/")
@@ -66,11 +68,12 @@ def root():
     
     return {
         "service": "TechFlow FAQ Expert",
-        "lesson": "02 - RAG-Powered Knowledge Search",
+        "lesson": "02 - Tool-Based RAG",
         "ai_enabled": ai_enabled,
-        "mode": "AI-RAG" if ai_enabled else "Manual Keyword Search",
+        "mode": "AI-RAG-Tool" if ai_enabled else "Manual Keyword Search",
         "feature_flag": "ENABLE_AI_FAQ_RAG",
-        "description": "Compare semantic search with vector embeddings vs simple keyword matching"
+        "description": "Agent uses tools to search knowledge base autonomously vs simple keyword matching",
+        "rag_approach": "Tool-based (agent decides when to search)" if ai_enabled else "N/A"
     }
 
 
@@ -136,20 +139,28 @@ def get_stats():
     
     if ai_enabled:
         return {
-            "mode": "ai-rag",
-            "description": "RAG-powered semantic search with vector embeddings",
+            "mode": "ai-rag-tool",
+            "description": "Tool-based RAG - Agent autonomously searches knowledge base",
             "features": [
+                "Agent decides when and how to search",
+                "Can perform multiple searches to gather complete information",
                 "Vector similarity search with pgvector",
                 "Semantic understanding of questions",
-                "Context-aware answer generation",
+                "Context-aware answer generation with tool results",
                 "Source citations with confidence scores",
                 "Handles complex and varied phrasing"
             ],
+            "advantages": [
+                "Better token efficiency (only searches what's needed)",
+                "Multi-step reasoning (can refine searches)",
+                "Agent autonomy (decides search strategy)",
+                "Transparency (see what agent searched for)"
+            ],
             "typical_metrics": {
                 "accuracy": "90%+",
-                "response_time": "1-3 seconds",
+                "response_time": "1-4 seconds",
                 "coverage": "Entire knowledge base",
-                "can_handle": "Natural language questions, synonyms, complex queries"
+                "can_handle": "Natural language questions, synonyms, complex queries, multi-part questions"
             }
         }
     else:

@@ -1,18 +1,42 @@
-FROM python:3.11-slim
+# Multi-stage build for smaller, optimized image
+FROM python:3.11-slim AS builder
 
 # Install uv for faster package management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set working directory
 WORKDIR /app
 
 # Copy requirements
 COPY requirements.txt .
 
-# Install Python dependencies with uv (much faster!)
-RUN uv pip install --system -r requirements.txt
+# Install dependencies with CPU-only PyTorch (much smaller!)
+RUN uv venv /opt/venv && \
+    . /opt/venv/bin/activate && \
+    uv pip install --no-cache \
+    --index-strategy unsafe-best-match \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r requirements.txt
 
-# Copy source code
+# Final stage - minimal runtime image
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal system dependencies for docling
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libgl1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy only the virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Set PATH and environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    HF_HOME=/tmp/ \
+    TORCH_HOME=/tmp/ \
+    OMP_NUM_THREADS=4
+
+# Copy source code and knowledge base
 COPY src/ ./src/
 COPY knowledge-base/ ./knowledge-base/
 
